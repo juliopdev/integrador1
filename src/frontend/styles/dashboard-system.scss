@@ -1,0 +1,16 @@
+@use 'abstracts/breakpoints';
+@use 'abstracts/reset';
+@use 'abstracts/supports';
+@use 'abstracts/tokens-base';
+@use 'abstracts/z-index';
+
+@use 'themes/theme-manager';
+
+@use '../components/button/ui';
+@use '../components/badge/ui' as ui2;
+
+@use '../../backend/feature/manage-admin-dashboard/presentation/views/index';
+@use '../../backend/feature/manage-system-backend/presentation/views/index' as index2;
+@use '../../backend/feature/manage-system-tenant/presentation/views/index' as index3;
+
+@include reset.global-reset;

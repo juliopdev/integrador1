@@ -1,0 +1,6 @@
+<%
+  const badgeClass = locals.variant ? `badge badge--${variant}` : 'badge badge--primary';
+%>
+<span class="<%= badgeClass %> <%= locals.className || '' %>">
+  <%= locals.label || 'Badge' %>
+</span>

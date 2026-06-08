@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - SaaS Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="<%= stylesheet %>" />
+</head>
+<body class="theme-minimalist" data-theme="dark">
+  <div class="dashboard-layout">
+    <div class="container">
+      
+      <!-- ES: Header Común del Layout. EN: Common Layout Header. -->
+      <header class="dashboard-header">
+        <div class="dashboard-header__logo-area">
+          <h1 class="dashboard-header__title">Mi Baas Platform</h1>
+          <p class="dashboard-header__subtitle">Dashboard Administrativo</p>
+        </div>
+        <div class="dashboard-header__actions">
+          <button type="button" class="btn btn--secondary btn--sm" id="theme-toggle" title="Cambiar Tema / Switch Theme">
+            ☀️
+          </button>
+          <% if (locals.adminUser) { %>
+            <a href="/dashboard/logout" class="btn btn--secondary btn--sm">Cerrar Sesión / Logout</a>
+          <% } else { %>
+            <a href="/dashboard" class="btn btn--secondary btn--sm">&larr; Volver al Panel</a>
+          <% } %>
+        </div>
+      </header>
+
+      <!-- ES: Cuerpo de Contenido Principal. EN: Main Body Content. -->
+      <main class="dashboard-layout__content">
+        <%- body %>
+      </main>
+
+    </div>
+  </div>
+
+  <!-- ES: Carga de GSAP para micro-animaciones cliente -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const body = document.body;
+      const toggleBtn = document.getElementById('theme-toggle');
+      
+      // ES: Cargar e inicializar tema guardado en localStorage.
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      body.setAttribute('data-theme', savedTheme);
+      if (toggleBtn) {
+        updateToggleButtonIcon(savedTheme);
+      }
+
+      // ES: Animación GSAP de entrada escalonada (stagger) para tarjetas de acción.
+      // if (document.querySelector('.action-card')) {
+      //   gsap.from('.action-card', {
+      //     opacity: 0,
+      //     y: 20,
+      //     scale: 0.96,
+      //     duration: 0.45,
+      //     stagger: 0.08,
+      //     ease: 'power2.out'
+      //   });
+      // }
+
+      // ES: Animación GSAP de entrada para la grilla o tabla de backends.
+      if (document.querySelector('.data-table__tr')) {
+        gsap.from('.data-table__tr', {
+          opacity: 0,
+          x: -15,
+          duration: 0.4,
+          stagger: 0.06,
+          ease: 'power2.out'
+        });
+      }
+
+      // ES: Alternador de tema Claro/Oscuro con micro-animación.
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+          const currentTheme = body.getAttribute('data-theme');
+          const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+          gsap.to('.dashboard-panel', {
+            opacity: 0.4,
+            duration: 0.15,
+            onComplete: () => {
+              body.setAttribute('data-theme', newTheme);
+              localStorage.setItem('theme', newTheme);
+              updateToggleButtonIcon(newTheme);
+
+              gsap.to('.dashboard-panel', {
+                opacity: 1,
+                duration: 0.25
+              });
+            }
+          });
+        });
+      }
+
+      function updateToggleButtonIcon(theme) {
+        toggleBtn.innerHTML = theme === 'dark' ? '☀️' : '🌙';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!-- ES: Sección Paso 2 del Wizard: Constructor interactivo de Tablas y Columnas -->
+<!-- EN: Section Step 2 of the Wizard: Interactive Tables and Columns Builder -->
+<div class="wizard-step" id="step-manage-api">
+  <div class="step-header">
+    <div class="step-badge">Paso 2 de 3 / Step 2 of 3</div>
+    <h2>Modelador de Base de Datos / Database Modeler</h2>
+    <p class="step-desc">Diseña las tablas físicas y define el esquema de atributos. Se auto-inyectarán claves y auditorías.</p>
+  </div>
+
+  <div class="modeler-container">
+    <!-- Panel Izquierdo: Tablas -->
+    <div class="modeler-sidebar">
+      <div class="sidebar-header">
+        <h3>Tablas / Tables</h3>
+        <button type="button" class="btn-sm btn-accent" onclick="addNewTablePrompt()">+ Nueva Tabla</button>
+      </div>
+      <ul id="tables-list" class="modeler-list">
+        <!-- Generado dinámicamente / Generated dynamically -->
+      </ul>
+    </div>
+
+    <!-- Panel Derecho: Columnas -->
+    <div class="modeler-main">
+      <div id="no-table-selected" class="empty-state">
+        <div class="empty-icon">📂</div>
+        <h4>Selecciona o crea una tabla</h4>
+        <p>Añade entidades a tu base de datos para comenzar a estructurar las columnas.</p>
+      </div>
+
+      <div id="table-editor" class="table-editor-content" style="display: none;">
+        <div class="editor-header">
+          <div class="editor-title-wrap">
+            <span class="entity-badge">TABLA</span>
+            <h3 id="current-table-name">Cargando...</h3>
+          </div>
+          <button type="button" class="btn btn-danger btn-sm" onclick="removeCurrentTable()">Eliminar Tabla / Delete Table</button>
+        </div>
+
+        <div class="columns-table-container">
+          <table class="columns-table">
+            <thead>
+              <tr>
+                <th>Nombre del Campo / Column Name</th>
+                <th>Tipo / Data Type</th>
+                <th>Nulo / Null</th>
+                <th>Único / Unique</th>
+                <th>Valor por Defecto / Default</th>
+                <th>Acción / Action</th>
+              </tr>
+            </thead>
+            <tbody id="columns-rows">
+              <!-- Generado dinámicamente / Generated dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="editor-actions">
+          <button type="button" class="btn btn-accent" onclick="addNewColumnRow()">+ Añadir Columna / Add Column</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wizard-actions">
+    <button type="button" class="btn btn-secondary" onclick="goToStep(1)">&larr; Atrás / Back</button>
+    <button type="button" class="btn btn-primary" onclick="goToStep(3)">Siguiente / Next &rarr;</button>
+  </div>
+</div>

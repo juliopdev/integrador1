@@ -1,0 +1,58 @@
+<div class="tenant-dashboard">
+  <div class="tenant-dashboard__header">
+    <h1>Gestión de Inquilinos</h1>
+    <a href="/dashboard/tenants/new" class="btn btn--primary">Crear Inquilino</a>
+  </div>
+
+  <table class="tenant-dashboard__table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Subdominio</th>
+        <th>Plan</th>
+        <th>Estado</th>
+        <th>Blueprint</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (tenants && tenants.length > 0) { %>
+        <% tenants.forEach(t => { %>
+          <tr>
+            <td><%= t.id %></td>
+            <td><%= t.name %></td>
+            <td><%= t.subdomain %></td>
+            <td><%= t.plan %></td>
+            <td>
+              <span class="badge badge--<%= t.status === 'active' ? 'success' : 'danger' %>">
+                <%= t.status %>
+              </span>
+            </td>
+            <td><%= t.backendBlueprintId || 'N/A' %></td>
+            <td class="tenant-dashboard__actions">
+              <a href="/dashboard/tenants/<%= t.id %>/edit" class="btn btn--secondary btn--sm">Editar</a>
+              <button onclick="toggleTenantStatus('<%= t.id %>')" class="btn btn--danger btn--sm">Suspender/Activar</button>
+            </td>
+          </tr>
+        <% }) %>
+      <% } else { %>
+        <tr>
+          <td colspan="7">No hay inquilinos registrados.</td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<script>
+async function toggleTenantStatus(id) {
+  try {
+    const res = await fetch(`/api-system/v1/tenants/${id}/toggle-status`, { method: 'POST' });
+    if (res.ok) window.location.reload();
+    else alert('Error toggling tenant status');
+  } catch(e) {
+    alert('Failed to toggle status');
+  }
+}
+</script>

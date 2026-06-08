@@ -1,0 +1,21 @@
+/**
+ * ES: Mixin de variables de modo claro para Glassmorphism.
+ */
+@mixin glassmorphism-light {
+  --bg-color: #f3f4f6;
+  --bg-gradient: radial-gradient(circle at center, #e0e7ff 0%, #f3f4f6 100%);
+  --text-color: #1f2937;
+  --text-muted: #4b5563;
+  --card-bg: rgba(255, 255, 255, 0.45);
+  --card-border: rgba(0, 0, 0, 0.09);
+  --card-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
+  --accent-color: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-glow: rgba(99, 102, 241, 0.2);
+  --input-bg: rgba(255, 255, 255, 0.6);
+  --input-border: rgba(0, 0, 0, 0.15);
+  --input-focus-border: #6366f1;
+  --glass-blur: blur(16px);
+  --transition-fast: all 0.15s ease;
+  --danger: #dc2626;
+}

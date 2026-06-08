@@ -1,0 +1,17 @@
+/**
+ * ES: Estilos BEM para el componente badge/insignia.
+ */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: 1px solid;
+
+  &--primary {
+    background: rgba(6, 182, 212, 0.1);
+    color: #22d3ee;
+    border-color: rgba(6, 182, 212, 0.3);
+  }
+}

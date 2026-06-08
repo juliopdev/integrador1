@@ -1,0 +1,53 @@
+<!-- ES: Sección Paso 1 del Wizard: Información general del Backend -->
+<!-- EN: Section Step 1 of the Wizard: General Backend Information -->
+<div class="wizard-step active" id="step-start">
+  <div class="step-header">
+    <div class="step-badge">Paso 1 de 3 / Step 1 of 3</div>
+    <h2>Información del Backend / Backend Info</h2>
+    <p class="step-desc">Define los identificadores primarios y la versión para tu motor sin código.</p>
+  </div>
+
+  <div class="form-grid">
+    <div class="form-group">
+      <label for="blueprint-id">Identificador Único (ID) <span class="required">*</span></label>
+      <input 
+        type="text" 
+        id="blueprint-id" 
+        placeholder="Ej: tienda_online_api" 
+        value="<%= blueprint ? blueprint.id : '' %>"
+        <%= (blueprint && blueprint.id) ? 'readonly' : '' %>
+        required
+      />
+      <small>Solo letras minúsculas, números y guiones bajos. No modificable una vez creado.</small>
+    </div>
+
+    <div class="form-group">
+      <label for="blueprint-name">Nombre Comercial / Display Name <span class="required">*</span></label>
+      <input 
+        type="text" 
+        id="blueprint-name" 
+        placeholder="Ej: Tienda Virtual Pro" 
+        value="<%= blueprint ? blueprint.name : '' %>"
+        required
+      />
+      <small>Nombre visible en paneles administrativos.</small>
+    </div>
+
+    <div class="form-group">
+      <label for="blueprint-version">Versión Estructural <span class="required">*</span></label>
+      <input 
+        type="text" 
+        id="blueprint-version" 
+        placeholder="v1" 
+        value="<%= (blueprint && blueprint.version) ? blueprint.version : 'v1' %>"
+        required
+      />
+      <small>Control de versiones semánticas para APIs.</small>
+    </div>
+  </div>
+
+  <div class="wizard-actions">
+    <a href="/dashboard/backends" class="btn btn-secondary">Cancelar / Cancel</a>
+    <button type="button" class="btn btn-primary" onclick="goToStep(2)">Siguiente / Next &rarr;</button>
+  </div>
+</div>

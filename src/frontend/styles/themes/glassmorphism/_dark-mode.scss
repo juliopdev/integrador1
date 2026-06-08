@@ -1,0 +1,21 @@
+/**
+ * ES: Mixin de variables de modo oscuro para Glassmorphism.
+ */
+@mixin glassmorphism-dark {
+  --bg-color: #0b0f19;
+  --bg-gradient: radial-gradient(circle at center, #1b1338 0%, #080710 100%);
+  --text-color: #f3f4f6;
+  --text-muted: #9ca3af;
+  --card-bg: rgba(17, 24, 39, 0.6);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  --accent-color: #8b5cf6;
+  --accent-hover: #7c3aed;
+  --accent-glow: rgba(139, 92, 246, 0.3);
+  --input-bg: rgba(0, 0, 0, 0.25);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --input-focus-border: #8b5cf6;
+  --glass-blur: blur(16px);
+  --transition-fast: all 0.15s ease;
+  --danger: #ef4444;
+}

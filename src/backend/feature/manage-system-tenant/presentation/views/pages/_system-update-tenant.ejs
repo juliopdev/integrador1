@@ -1,0 +1,52 @@
+<div class="tenant-dashboard">
+  <div class="tenant-dashboard__header">
+    <h1>Actualizar Inquilino: <%= tenant.name %></h1>
+    <a href="/dashboard/tenants" class="btn btn--secondary">Volver al listado</a>
+  </div>
+
+  <form id="updateTenantForm" class="tenant-dashboard__form">
+    <div class="tenant-dashboard__form-group">
+      <label for="plan">Plan</label>
+      <select id="plan" name="plan">
+        <option value="free" <%= tenant.plan === 'free' ? 'selected' : '' %>>Gratis</option>
+        <option value="basic" <%= tenant.plan === 'basic' ? 'selected' : '' %>>Básico</option>
+        <option value="premium" <%= tenant.plan === 'premium' ? 'selected' : '' %>>Premium</option>
+      </select>
+    </div>
+
+    <div class="tenant-dashboard__form-group">
+      <label for="status">Estado</label>
+      <select id="status" name="status">
+        <option value="active" <%= tenant.status === 'active' ? 'selected' : '' %>>Activo</option>
+        <option value="suspended" <%= tenant.status === 'suspended' ? 'selected' : '' %>>Suspendido</option>
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn--primary">Guardar Cambios</button>
+  </form>
+</div>
+
+<script>
+document.getElementById('updateTenantForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData.entries());
+
+  try {
+    const res = await fetch('/api-system/v1/tenants/<%= tenant.id %>', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    if (res.ok) {
+      window.location.href = '/dashboard/tenants';
+    } else {
+      const errorData = await res.json();
+      alert(`Error actualizando inquilino: ${errorData.message}`);
+    }
+  } catch(err) {
+    alert('Fallo de red');
+  }
+});
+</script>

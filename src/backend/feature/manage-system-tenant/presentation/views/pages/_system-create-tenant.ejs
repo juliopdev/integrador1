@@ -1,0 +1,86 @@
+<div class="tenant-dashboard">
+  <div class="tenant-dashboard__header">
+    <h1>Crear Nuevo Inquilino</h1>
+    <a href="/dashboard/tenants" class="btn btn--secondary">Volver al listado</a>
+  </div>
+
+  <form id="createTenantForm" class="tenant-dashboard__form">
+    <div class="tenant-dashboard__form-group">
+      <label for="id">ID de Inquilino</label>
+      <input type="text" id="id" name="id" required placeholder="ej: mi-empresa">
+    </div>
+
+    <div class="tenant-dashboard__form-group">
+      <label for="name">Nombre</label>
+      <input type="text" id="name" name="name" required placeholder="ej: Mi Empresa">
+    </div>
+
+    <div class="tenant-dashboard__form-group">
+      <label for="subdomain">Subdominio</label>
+      <input type="text" id="subdomain" name="subdomain" required placeholder="ej: mi-empresa">
+    </div>
+
+    <div class="tenant-dashboard__form-group">
+      <label for="plan">Plan</label>
+      <select id="plan" name="plan">
+        <option value="free">Gratis</option>
+        <option value="basic">Básico</option>
+        <option value="premium">Premium</option>
+      </select>
+    </div>
+
+    <div class="tenant-dashboard__form-group">
+      <label for="backendBlueprintId">Blueprint de Backend (Opcional)</label>
+      <select id="backendBlueprintId" name="backendBlueprintId">
+        <option value="">Ninguno</option>
+        <% if (blueprints && blueprints.length > 0) { %>
+          <% blueprints.forEach(bp => { %>
+            <option value="<%= bp.id %>"><%= bp.name %> (<%= bp.version %>)</option>
+          <% }) %>
+        <% } %>
+      </select>
+    </div>
+
+    <div class="tenant-dashboard__form-group">
+      <label for="masterEmail">Email del Master</label>
+      <input type="email" id="masterEmail" name="masterEmail" required>
+    </div>
+
+    <div class="tenant-dashboard__form-group">
+      <label for="masterPassword">Contraseña del Master</label>
+      <input type="password" id="masterPassword" name="masterPassword" required>
+    </div>
+
+    <div class="tenant-dashboard__form-group">
+      <label for="masterPassphrase">Frase de Seguridad</label>
+      <input type="password" id="masterPassphrase" name="masterPassphrase" required>
+    </div>
+
+    <button type="submit" class="btn btn--primary">Crear Inquilino</button>
+  </form>
+</div>
+
+<script>
+document.getElementById('createTenantForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData.entries());
+
+  try {
+    const res = await fetch('/api-system/v1/tenants', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    if (res.ok) {
+      window.location.href = '/dashboard/tenants';
+    } else {
+      const errorData = await res.json();
+      alert(`Error creando inquilino: ${errorData.message}`);
+    }
+  } catch(err) {
+    alert('Fallo de red');
+  }
+});
+</script>

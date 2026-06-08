@@ -1,0 +1,305 @@
+/**
+ * ES: Estilos de maquetación para la página del Wizard de Backends (Feature: manage-system-backend).
+ */
+
+/* ==========================================================================
+   Wizard Layout & Typography
+   ========================================================================== */
+.wizard-step {
+  display: none;
+}
+.wizard-step.active {
+  display: block;
+}
+
+.step-header {
+  margin-bottom: 1.5rem;
+}
+
+.step-badge {
+  font-size: 0.9rem;
+  color: var(--text-color, #1f2937);
+  margin-bottom: 0.25rem;
+}
+
+.step-header h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0.25rem 0;
+  color: var(--heading-color, #000);
+}
+
+.step-desc {
+  font-size: 0.95rem;
+  color: var(--text-color, #374151);
+  margin-bottom: 1rem;
+}
+
+/* ==========================================================================
+   Step 1: Form Grid Layout (Horizontal Fields)
+   ========================================================================== */
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.form-group label {
+  font-weight: normal;
+  color: var(--text-color, #1f2937);
+  white-space: nowrap;
+}
+
+.form-group input {
+  padding: 0.2rem 0.4rem;
+  border: 1px solid #9ca3af;
+  border-radius: 2px;
+  min-width: 200px;
+  background: transparent;
+}
+
+.form-group small {
+  font-size: 0.85rem;
+  color: var(--text-color, #1f2937);
+}
+
+/* ==========================================================================
+   Step 2: Modeler (Sidebar & Main Area)
+   ========================================================================== */
+.modeler-container {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 1rem;
+  min-height: 400px;
+  margin-bottom: 1.5rem;
+}
+
+.modeler-sidebar {
+  background: #e5e7eb;
+  border-radius: 6px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sidebar-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-header h3 {
+  font-size: 1rem;
+  font-weight: bold;
+  margin: 0;
+  color: #000;
+}
+
+.modeler-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.modeler-list__item {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+  color: #000;
+}
+
+.modeler-list__item span {
+  font-weight: normal;
+}
+
+.modeler-list__item--active {
+  font-weight: bold;
+}
+
+.modeler-main {
+  background: #e5e7eb;
+  border-radius: 6px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state h4 {
+  font-size: 1rem;
+  font-weight: bold;
+  margin: 0 0 0.25rem 0;
+  color: #000;
+}
+
+.empty-state p {
+  font-size: 0.9rem;
+  color: #000;
+  margin: 0;
+}
+
+/* ==========================================================================
+   Table Editor (When a table is selected)
+   ========================================================================== */
+.table-editor-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.editor-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.entity-badge {
+  font-size: 0.75rem;
+  font-weight: bold;
+  background: #d1d5db;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.editor-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.columns-table-container {
+  overflow-x: auto;
+  flex-grow: 1;
+}
+
+.columns-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.columns-table th,
+.columns-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid #d1d5db;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.columns-table th {
+  font-weight: bold;
+}
+
+.editor-actions {
+  margin-top: 1rem;
+}
+
+/* ==========================================================================
+   Step 3: Review Grid
+   ========================================================================== */
+.review-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.review-card {
+  background: #e5e7eb;
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.review-card h3 {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin: 0 0 1rem 0;
+  color: #000;
+}
+
+.summary-details {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+}
+
+.summary-details li {
+  margin-bottom: 0.25rem;
+  font-size: 0.95rem;
+  color: #000;
+}
+
+.summary-details li strong {
+  font-weight: bold;
+}
+
+.alert {
+  padding: 0.75rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.alert-info {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.json-code-block {
+  margin: 0;
+  font-family: monospace;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  color: #374151;
+}
+
+/* ==========================================================================
+   Wizard Actions
+   ========================================================================== */
+.wizard-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+

@@ -1,0 +1,38 @@
+<!-- ES: Sección Paso 3 del Wizard: Revisión final y Guardar -->
+<!-- EN: Section Step 3 of the Wizard: Final Review and Save -->
+<div class="wizard-step" id="step-finish">
+  <div class="step-header">
+    <div class="step-badge">Paso 3 de 3 / Step 3 of 3</div>
+    <h2>Revisión Estructural / Structural Review</h2>
+    <p class="step-desc">Confirma la configuración de tu backend sin código. Se aplicará a la base de datos del sistema y se guardará el registro histórico.</p>
+  </div>
+
+  <div class="review-grid">
+    <div class="review-card">
+      <h3>Resumen / Summary</h3>
+      <ul class="summary-details">
+        <li><strong>Identificador único (ID):</strong> <span id="review-id">-</span></li>
+        <li><strong>Nombre comercial:</strong> <span id="review-name">-</span></li>
+        <li><strong>Versión de API:</strong> <span id="review-version">-</span></li>
+        <li><strong>Total de Tablas:</strong> <span id="review-tables-count">0</span></li>
+      </ul>
+      
+      <div class="alert alert-info">
+        <strong>💡 Nota:</strong> El sistema agregará automáticamente las columnas <code>id</code> (INTEGER PRIMARY KEY), <code>created_at</code> y <code>updated_at</code> a todas tus tablas si no las has definido explícitamente.
+      </div>
+    </div>
+
+    <div class="review-card">
+      <h3>Esquema Generado / Generated Schema (JSON)</h3>
+      <pre class="json-code-block"><code id="review-json-preview">{}</code></pre>
+    </div>
+  </div>
+
+  <div id="wizard-error" class="alert alert-danger" style="display: none;"></div>
+  <div id="wizard-success" class="alert alert-success" style="display: none;"></div>
+
+  <div class="wizard-actions">
+    <button type="button" class="btn btn-secondary" id="btn-finish-back" onclick="goToStep(2)">&larr; Atrás / Back</button>
+    <button type="button" class="btn btn-accent" id="btn-save-blueprint" onclick="saveBlueprint()">Guardar y Activar / Save and Deploy</button>
+  </div>
+</div>

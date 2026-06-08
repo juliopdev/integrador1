@@ -1,0 +1,76 @@
+// ES: Estilos para la gestión de inquilinos (Tenants).
+// EN: Styles for tenant management.
+
+.tenant-dashboard {
+  padding: 1.5rem;
+  background-color: var(--color-surface-base);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+
+    h1 {
+      font-size: 1.5rem;
+      color: var(--color-text-base);
+    }
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--color-surface-raised);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--color-border-base);
+    }
+
+    th {
+      background-color: var(--color-surface-overlay);
+      color: var(--color-text-muted);
+      font-weight: 600;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 600px;
+
+    &-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      label {
+        font-weight: 600;
+        color: var(--color-text-base);
+      }
+
+      input, select {
+        padding: 0.75rem;
+        border: 1px solid var(--color-border-base);
+        border-radius: var(--radius-sm);
+        background-color: var(--color-surface-base);
+        color: var(--color-text-base);
+      }
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+}

@@ -1,0 +1,7 @@
+<% 
+  const btnClass = locals.variant ? `btn btn--${variant}` : 'btn btn--primary';
+  const customId = locals.id ? `id="${id}"` : '';
+%>
+<button type="<%= locals.type || 'button' %>" <%- customId %> class="<%= btnClass %> <%= locals.className || '' %>">
+  <%= locals.label || 'Click' %>
+</button>

@@ -1,0 +1,404 @@
+
+
+<% if (error) { %>
+  <div class="alert alert--danger"><%= error %></div>
+<% } %>
+
+<!-- VISTA: LISTADO DE PLANOS -->
+<% if (activeStep === 'list') { %>
+  <div class="dashboard-panel">
+    <div class="dashboard-panel__header">
+      <div>
+        <h2 class="dashboard-panel__title">Planos de Backend No-Code</h2>
+        <p class="dashboard-panel__subtitle">Crea y administra esquemas lógicos para tus inquilinos de forma visual.</p>
+      </div>
+      <a href="/dashboard/backends/new" class="btn btn--primary">+ Definir Backend</a>
+    </div>
+
+    <% if (backends.length === 0) { %>
+      <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+        📂 No hay planos técnicos definidos en el sistema. ¡Define el primero!
+      </div>
+    <% } else { %>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="data-table__th">ID del Plano</th>
+            <th class="data-table__th">Nombre Comercial</th>
+            <th class="data-table__th">Versión</th>
+            <th class="data-table__th">Total Tablas</th>
+            <th class="data-table__th">Fecha de Creación</th>
+            <th class="data-table__th" style="text-align: right;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% backends.forEach(b => { %>
+            <tr class="data-table__tr" id="row-<%= b.id %>">
+              <td class="data-table__td"><strong><%= b.id %></strong></td>
+              <td class="data-table__td"><%= b.name %></td>
+              <td class="data-table__td"><span class="badge badge--primary"><%= b.version %></span></td>
+              <td class="data-table__td"><%= (b.schema && b.schema.tables) ? b.schema.tables.length : 0 %></td>
+              <td class="data-table__td"><%= new Date(b.createdAt).toLocaleDateString() %></td>
+              <td class="data-table__td" style="text-align: right; display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <a href="/dashboard/backends/<%= b.id %>/edit" class="btn btn--secondary btn--sm">Editar</a>
+                <button class="btn btn--danger btn--sm" onclick="confirmDeleteBlueprint('<%= b.id %>')">Borrar</button>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+<% } %>
+
+<!-- VISTA: ASISTENTE WIZARD MULTI-PASO -->
+<% if (activeStep === 'wizard') { %>
+  <div class="dashboard-panel">
+    <!-- Paso 1 -->
+    <%- include('../sections/_step-start') %>
+
+    <!-- Paso 2 -->
+    <%- include('../sections/_step-manage-api') %>
+
+    <!-- Paso 3 -->
+    <%- include('../sections/_step-finish') %>
+  </div>
+<% } %>
+
+<script>
+  window.initialBlueprint = <%- blueprint ? JSON.stringify(blueprint) : 'null' %>;
+  window.isEditing = <%= (blueprint && blueprint.id) ? 'true' : 'false' %>;
+  
+  const blueprintState = {
+    id: '',
+    name: '',
+    version: 'v1',
+    schema: {
+      tables: []
+    }
+  };
+
+  let activeTableIndex = null;
+
+  if (window.initialBlueprint) {
+    blueprintState.id = window.initialBlueprint.id;
+    blueprintState.name = window.initialBlueprint.name;
+    blueprintState.version = window.initialBlueprint.version;
+    blueprintState.schema = window.initialBlueprint.schema || { tables: [] };
+  }
+
+  function goToStep(stepNumber) {
+    if (stepNumber === 2 && document.getElementById('step-start').classList.contains('active')) {
+      const idInput = document.getElementById('blueprint-id');
+      const nameInput = document.getElementById('blueprint-name');
+      const versionInput = document.getElementById('blueprint-version');
+
+      if (!idInput.value.trim() || !nameInput.value.trim() || !versionInput.value.trim()) {
+        alert('Por favor complete todos los campos obligatorios / Please fill all required fields');
+        return;
+      }
+
+      const idRegex = /^[a-z0-9_]+$/;
+      if (!idRegex.test(idInput.value.trim())) {
+        alert('El ID solo puede contener letras minúsculas, números y guiones bajos / ID must be lowercase, numbers, and underscores');
+        return;
+      }
+
+      blueprintState.id = idInput.value.trim();
+      blueprintState.name = nameInput.value.trim();
+      blueprintState.version = versionInput.value.trim();
+    }
+
+    if (stepNumber === 3) {
+      if (blueprintState.schema.tables.length === 0) {
+        alert('Debe modelar al menos una tabla antes de proceder / Must model at least one table before proceeding');
+        return;
+      }
+
+      document.getElementById('review-id').innerText = blueprintState.id;
+      document.getElementById('review-name').innerText = blueprintState.name;
+      document.getElementById('review-version').innerText = blueprintState.version;
+      document.getElementById('review-tables-count').innerText = blueprintState.schema.tables.length;
+      document.getElementById('review-json-preview').innerText = JSON.stringify(blueprintState.schema, null, 2);
+    }
+
+    document.querySelectorAll('.wizard-step').forEach(step => step.classList.remove('active'));
+    let targetEl;
+    if (stepNumber === 1) {
+      targetEl = document.getElementById('step-start');
+    } else if (stepNumber === 2) {
+      targetEl = document.getElementById('step-manage-api');
+      renderTablesList();
+    } else if (stepNumber === 3) {
+      targetEl = document.getElementById('step-finish');
+    }
+
+    if (targetEl) {
+      targetEl.classList.add('active');
+      gsap.from(targetEl, {
+        opacity: 0,
+        y: 15,
+        duration: 0.35,
+        ease: 'power2.out'
+      });
+    }
+  }
+
+  function addNewTablePrompt() {
+    const tableName = prompt('Nombre de la nueva tabla (ej: productos, facturas):');
+    if (!tableName) return;
+
+    const formattedName = tableName.trim().toLowerCase();
+    const tableRegex = /^[a-z_][a-z0-9_]*$/;
+    if (!tableRegex.test(formattedName)) {
+      alert('Nombre inválido. Use letras, números y guiones bajos, comenzando con una letra.');
+      return;
+    }
+
+    if (blueprintState.schema.tables.some(t => t.name === formattedName)) {
+      alert('Esa tabla ya existe / That table already exists');
+      return;
+    }
+
+    blueprintState.schema.tables.push({
+      name: formattedName,
+      columns: [
+        { name: 'nombre', type: 'text', nullable: true, unique: false }
+      ]
+    });
+
+    renderTablesList();
+    selectTable(blueprintState.schema.tables.length - 1);
+  }
+
+  function renderTablesList() {
+    const listEl = document.getElementById('tables-list');
+    listEl.innerHTML = '';
+
+    blueprintState.schema.tables.forEach((table, index) => {
+      const li = document.createElement('li');
+      li.className = `modeler-list__item ${activeTableIndex === index ? 'modeler-list__item--active' : ''}`;
+      li.innerHTML = `
+        <span>📂 ${table.name}</span>
+        <small style="color:var(--text-muted);">${table.columns.length} cols</small>
+      `;
+      li.onclick = () => selectTable(index);
+      listEl.appendChild(li);
+    });
+  }
+
+  function selectTable(index) {
+    activeTableIndex = index;
+    renderTablesList();
+
+    const table = blueprintState.schema.tables[index];
+    if (!table) {
+      document.getElementById('no-table-selected').style.display = 'block';
+      document.getElementById('table-editor').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('no-table-selected').style.display = 'none';
+    document.getElementById('table-editor').style.display = 'flex';
+    document.getElementById('current-table-name').innerText = table.name;
+
+    renderColumnsRows();
+  }
+
+  function renderColumnsRows() {
+    const tbody = document.getElementById('columns-rows');
+    tbody.innerHTML = '';
+
+    const table = blueprintState.schema.tables[activeTableIndex];
+    if (!table) return;
+
+    table.columns.forEach((col, index) => {
+      const tr = document.createElement('tr');
+      tr.className = 'data-table__tr';
+      tr.innerHTML = `
+        <td class="data-table__td">
+          <input 
+            type="text" 
+            class="form-group__input"
+            value="${col.name}" 
+            placeholder="nombre_campo" 
+            onchange="updateColumnField(${index}, 'name', this.value)"
+            required
+          />
+        </td>
+        <td class="data-table__td">
+          <select class="form-group__input" onchange="updateColumnField(${index}, 'type', this.value)">
+            <option value="text" ${col.type === 'text' ? 'selected' : ''}>TEXT</option>
+            <option value="integer" ${col.type === 'integer' ? 'selected' : ''}>INTEGER</option>
+            <option value="real" ${col.type === 'real' ? 'selected' : ''}>REAL (FLOAT)</option>
+            <option value="boolean" ${col.type === 'boolean' ? 'selected' : ''}>BOOLEAN</option>
+          </select>
+        </td>
+        <td class="data-table__td" style="text-align:center;">
+          <input 
+            type="checkbox" 
+            ${col.nullable ? 'checked' : ''} 
+            onchange="updateColumnField(${index}, 'nullable', this.checked)"
+          />
+        </td>
+        <td class="data-table__td" style="text-align:center;">
+          <input 
+            type="checkbox" 
+            ${col.unique ? 'checked' : ''} 
+            onchange="updateColumnField(${index}, 'unique', this.checked)"
+          />
+        </td>
+        <td class="data-table__td">
+          <input 
+            type="text" 
+            class="form-group__input"
+            value="${col.defaultValue !== undefined ? col.defaultValue : ''}" 
+            placeholder="Nulo" 
+            onchange="updateColumnField(${index}, 'defaultValue', this.value)"
+          />
+        </td>
+        <td class="data-table__td">
+          <button type="button" class="btn btn--danger btn--sm" onclick="removeColumnRow(${index})">Remover</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateColumnField(colIndex, field, value) {
+    const table = blueprintState.schema.tables[activeTableIndex];
+    if (!table) return;
+
+    if (field === 'name') {
+      const formatted = value.trim().toLowerCase();
+      const colRegex = /^[a-z_][a-z0-9_]*$/;
+      if (!colRegex.test(formatted)) {
+        alert('Nombre de columna inválido. Solo letras, números y guiones bajos.');
+        return;
+      }
+      table.columns[colIndex].name = formatted;
+    } else if (field === 'defaultValue') {
+      table.columns[colIndex].defaultValue = value.trim() === '' ? undefined : value.trim();
+    } else {
+      table.columns[colIndex][field] = value;
+    }
+  }
+
+  function addNewColumnRow() {
+    const table = blueprintState.schema.tables[activeTableIndex];
+    if (!table) return;
+
+    table.columns.push({
+      name: `columna_${table.columns.length + 1}`,
+      type: 'text',
+      nullable: true,
+      unique: false
+    });
+
+    renderColumnsRows();
+    renderTablesList();
+  }
+
+  function removeColumnRow(colIndex) {
+    const table = blueprintState.schema.tables[activeTableIndex];
+    if (!table) return;
+
+    if (table.columns.length <= 1) {
+      alert('Debe tener al menos una columna / Must retain at least one column');
+      return;
+    }
+
+    table.columns.splice(colIndex, 1);
+    renderColumnsRows();
+    renderTablesList();
+  }
+
+  function removeCurrentTable() {
+    if (!confirm('¿Seguro que desea eliminar esta tabla?')) return;
+    blueprintState.schema.tables.splice(activeTableIndex, 1);
+    selectTable(null);
+    renderTablesList();
+  }
+
+  async function saveBlueprint() {
+    const btnSave = document.getElementById('btn-save-blueprint');
+    const errorDiv = document.getElementById('wizard-error');
+    const successDiv = document.getElementById('wizard-success');
+
+    errorDiv.style.display = 'none';
+    successDiv.style.display = 'none';
+
+    btnSave.disabled = true;
+    btnSave.innerText = 'Guardando...';
+
+    const url = window.isEditing 
+      ? `/api-system/v1/backends/${blueprintState.id}`
+      : '/api-system/v1/backends';
+
+    const method = window.isEditing ? 'PUT' : 'POST';
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(blueprintState)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Error guardando el plano estructural');
+      }
+
+      successDiv.innerText = '✅ ¡Plano guardado y auditado con éxito! Redirigiendo...';
+      successDiv.style.display = 'block';
+
+      setTimeout(() => {
+        window.location.href = '/dashboard/backends';
+      }, 1500);
+
+    } catch (err) {
+      errorDiv.innerText = `❌ Error: ${err.message}`;
+      errorDiv.style.display = 'block';
+      btnSave.disabled = false;
+      btnSave.innerText = 'Guardar y Activar / Save and Deploy';
+    }
+  }
+
+  async function confirmDeleteBlueprint(id) {
+    if (!confirm(`¿Está seguro de que desea eliminar lógicamente el plano "${id}"?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api-system/v1/backends/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Error eliminando el plano estructural');
+      }
+
+      const row = document.getElementById(`row-${id}`);
+      if (row) {
+        gsap.to(row, {
+          opacity: 0,
+          x: -20,
+          duration: 0.35,
+          onComplete: () => row.remove()
+        });
+      }
+
+    } catch (err) {
+      alert(`❌ Error al eliminar: ${err.message}`);
+    }
+  }
+</script>

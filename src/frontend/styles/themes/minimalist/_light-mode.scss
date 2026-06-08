@@ -1,0 +1,22 @@
+/**
+ * ES: Mixin de variables de modo claro para el tema Minimalist.
+ */
+@mixin minimalist-light {
+  --bg-color: #ffffff;
+  --bg-gradient: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
+  --text-color: #111827;
+  --text-muted: #6b7280;
+  --card-bg: #f9fafb;
+  --card-border: #e5e7eb;
+  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  --accent-color: #0891b2;
+  --accent-hover: #0e7490;
+  --accent-glow: rgba(8, 145, 178, 0.15);
+  --input-bg: #ffffff;
+  --input-border: #d1d5db;
+  --input-focus-border: #0891b2;
+  --sidebar-bg: #f3f4f6;
+  --divider-color: #e5e7eb;
+  --transition-fast: all 0.15s ease;
+  --danger: #dc2626;
+}

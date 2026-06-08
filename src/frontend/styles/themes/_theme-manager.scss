@@ -1,0 +1,26 @@
+@use 'glassmorphism/dark-mode' as glassmorphism-dark-mode;
+@use 'glassmorphism/light-mode' as glassmorphism-light-mode;
+@use 'minimalist/dark-mode' as minimalist-dark-mode;
+@use 'minimalist/light-mode' as minimalist-light-mode;
+
+/**
+ * ES: Manejador de Temas.
+ * Mapea los mixins de variables de modo claro y oscuro a cada clase de tema correspondiente.
+ */
+.theme-glassmorphism {
+  &[data-theme="dark"], &:not([data-theme]) {
+    @include glassmorphism-dark-mode.glassmorphism-dark;
+  }
+  &[data-theme="light"] {
+    @include glassmorphism-light-mode.glassmorphism-light;
+  }
+}
+
+.theme-minimalist {
+  &[data-theme="dark"], &:not([data-theme]) {
+    @include minimalist-dark-mode.minimalist-dark;
+  }
+  &[data-theme="light"] {
+    @include minimalist-light-mode.minimalist-light;
+  }
+}

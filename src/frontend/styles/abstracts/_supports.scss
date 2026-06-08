@@ -1,0 +1,6 @@
+/**
+ * ES: Reglas condicionales @supports.
+ */
+@supports (backdrop-filter: blur(1px)) {
+  // ES: Estilos condicionales para navegadores modernos que soportan difuminado.
+}

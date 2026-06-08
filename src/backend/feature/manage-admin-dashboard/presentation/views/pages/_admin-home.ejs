@@ -1,0 +1,61 @@
+<div class="dashboard-panel">
+  <!-- Información del Administrador Conectado BEM -->
+  <div class="profile-card">
+    <div class="profile-card__avatar">👤</div>
+    <div class="profile-card__info">
+      <h3 class="profile-card__name">
+        <%= adminUser.email %>
+        <% if (adminUser.role === 'superadmin') { %>
+          <span class="profile-card__badge profile-card__badge--superadmin">Superadmin</span>
+        <% } else { %>
+          <span class="profile-card__badge profile-card__badge--master"><%= adminUser.role %></span>
+        <% } %>
+      </h3>
+      <p class="profile-card__tenant">
+        <% if (tenant) { %>
+          Inquilino activo: <strong><%= tenant.name %></strong> (ID: <%= tenant.id %>)
+        <% } else { %>
+          Consola global del sistema SaaS
+        <% } %>
+      </p>
+    </div>
+  </div>
+
+  <!-- Módulos Exclusivos del Superadmin -->
+  <% if (adminUser.role === 'superadmin') { %>
+    <h2 class="dashboard-panel__title">Consola del Superadministrador</h2>
+    <p class="dashboard-panel__subtitle">Acciones de control global, aprovisionamiento de bases de datos y maquetación sin código.</p>
+
+    <div class="dashboard-grid">
+      <a href="/dashboard/backends" class="action-card">
+        <div class="action-card__icon">🛠️</div>
+        <h3 class="action-card__title">Motor No-Code (Blueprints)</h3>
+        <p class="action-card__desc">Diseña, crea y edita esquemas lógicos y APIs para tus inquilinos.</p>
+        <div class="action-card__footer">Entrar al Motor &rarr;</div>
+      </a>
+
+      <a href="/dashboard/tenants" class="action-card">
+        <div class="action-card__icon">🏢</div>
+        <h3 class="action-card__title">Gestión de Inquilinos</h3>
+        <p class="action-card__desc">Administra, crea y suspende inquilinos asignando Blueprints.</p>
+        <div class="action-card__footer">Ver Inquilinos &rarr;</div>
+      </a>
+
+      <!-- Importar sección de logs y salud del sistema -->
+      <%- include('../sections/_tab-system-health') %>
+      <%- include('../sections/_tab-admin-logs') %>
+    </div>
+  <% } %>
+
+  <!-- Módulos Exclusivos del Master/Staff de Inquilino -->
+  <% if (adminUser.role === 'master' || adminUser.role === 'staff') { %>
+    <h2 class="dashboard-panel__title">Consola de Inquilino</h2>
+    <p class="dashboard-panel__subtitle">Administra tus bases de datos aisladas, canales de comunicación y miembros de soporte.</p>
+
+    <div class="dashboard-grid">
+      <!-- Importar secciones de métricas y acciones de staff -->
+      <%- include('../sections/_tab-master-metrics') %>
+      <%- include('../sections/_staff-quick-actions') %>
+    </div>
+  <% } %>
+</div>
