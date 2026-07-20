@@ -1,0 +1,12 @@
+<%
+  const code = locals.code || '';
+  const language = locals.language || 'json';
+  const label = locals.label || '';
+%>
+<div class="c-code-block" data-language="<%= language %>">
+  <div class="c-code-block__header">
+    <span class="c-code-block__label"><%= label || language.toUpperCase() %></span>
+    <%- include('frontend/components/copy-button/ui', { text: code, label: 'Copiar' }) %>
+  </div>
+  <pre class="c-code-block__pre"><code class="c-code-block__code"><%= code %></code></pre>
+</div>

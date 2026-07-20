@@ -1,0 +1,9 @@
+<%
+  const variant = locals.variant || 'info'; // success | warning | error | info
+  const message = locals.message || '';
+  const title = locals.title || null;
+%>
+<div class="c-alert c-alert--<%= variant %>" role="alert">
+  <% if (title) { %><strong class="c-alert__title"><%= title %></strong><% } %>
+  <span class="c-alert__message"><%= message %></span>
+</div>

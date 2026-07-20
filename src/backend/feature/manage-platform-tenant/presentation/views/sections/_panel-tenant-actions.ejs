@@ -1,0 +1,156 @@
+<%
+  const t = locals.activeTenant || {};
+  let statusLabel = t.status;
+  let statusVariant = 'neutral';
+  if (t.status === 'active') { statusLabel = 'Activo'; statusVariant = 'success'; }
+  else if (t.status === 'suspended') { statusLabel = 'Suspendido'; statusVariant = 'error'; }
+  else if (t.status === 'pending') { statusLabel = 'Pendiente'; statusVariant = 'warning'; }
+
+  const dateStr = t.createdAt ? new Date(t.createdAt).toLocaleString('es-ES') : '';
+  const masterEmailError = locals.masterEmailError || null;
+  const masterEmail = locals.masterEmail || (masterEmailError ? null : 'No asignado');
+  const masterStatus = locals.masterStatus || null;
+  const tenantHostSuffix = locals.tenantHostSuffix || 'localhost:3000';
+
+  // El toggle actual sólo alterna active ↔ suspended (pending viene sólo del alta y se activa
+  // automáticamente al finalizar el provision). El botón envía `desiredStatus` explícito para
+  // que reintentos por red no re-inviertan el estado (ver `set-tenant-status.usecase.js`).
+  const isActive = t.status === 'active';
+  const desiredStatus = isActive ? 'suspended' : 'active';
+  const toggleLabel = isActive ? 'Suspender Tenant' : 'Activar Tenant';
+  const toggleBtnVariant = isActive ? 'warning' : 'success';
+%>
+
+<%# Cada valor va escapado en el markup: refactor tras auditoría de seguridad para eliminar el %>
+<%# patrón de componer HTML por template-literals JS y emitirlo sin escape. Ver .doc/rules/ejs.md. %>
+<section class="c-card c-card--p-md">
+  <header class="c-card__header">
+    <div class="c-card__header-content">
+      <div class="c-card__heading">
+        <h3 class="c-card__title">Información General</h3>
+      </div>
+    </div>
+  </header>
+  <div class="c-card__body">
+    <ul class="c-health-list">
+      <li class="c-health-item">
+        <span class="c-health-item__name">ID del Tenant</span>
+        <span class="l-tenant-detail__value--mono"><%= t.id %></span>
+      </li>
+      <li class="c-health-item">
+        <span class="c-health-item__name">Nombre del Proyecto</span>
+        <span class="l-tenant-detail__value l-tenant-detail__value--strong"><%= t.projectName || t.subdomain %></span>
+      </li>
+      <li class="c-health-item">
+        <span class="c-health-item__name">Subdominio</span>
+        <span class="l-tenant-detail__value l-tenant-detail__value--strong"><%= t.subdomain %>.<%= tenantHostSuffix %></span>
+      </li>
+      <li class="c-health-item">
+        <span class="c-health-item__name">Correo del Master</span>
+        <% if (masterEmailError) { %>
+          <span class="l-tenant-detail__value u-text-error" title="<%= masterEmailError %>">⚠ Error al leer tenant.db</span>
+        <% } else { %>
+          <span class="l-tenant-detail__value"><%= masterEmail %></span>
+        <% } %>
+      </li>
+      <li class="c-health-item">
+        <span class="c-health-item__name">Estado Actual</span>
+        <%- include('frontend/components/badge/ui', { variant: statusVariant, label: statusLabel }) %>
+      </li>
+      <li class="c-health-item">
+        <span class="c-health-item__name">Fecha de Creación</span>
+        <span class="l-tenant-detail__value--muted"><%= dateStr %></span>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<section class="c-card c-card--p-md">
+  <header class="c-card__header">
+    <div class="c-card__header-content">
+      <div class="c-card__heading">
+        <h3 class="c-card__title">Configuración</h3>
+      </div>
+    </div>
+  </header>
+  <div class="c-card__body">
+    <div class="u-flex u-flex-col u-gap-lg">
+      <%# Editar el nombre visible del proyecto. El subdominio es inmutable (identidad física) y no se expone aquí. %>
+      <form class="c-form" action="/api-system/v1/tenants/<%= t.id %>" method="post" data-method="patch" data-redirect="/dashboard/tenants/<%= t.id %>/update" novalidate>
+        <%- include('frontend/components/input/ui', {
+          name: 'projectName',
+          label: 'Nombre del proyecto',
+          value: t.projectName || t.subdomain,
+          placeholder: 'Mi Tienda Online',
+          required: true,
+        }) %>
+        <div class="u-flex u-justify-end">
+          <%- include('frontend/components/button/ui', {
+            type: 'submit',
+            variant: 'primary',
+            label: 'Guardar cambios',
+            loadingLabel: 'Guardando…',
+          }) %>
+        </div>
+      </form>
+
+      <%# Reenvío de invitación: sólo tiene sentido si el Master no activó aún (status 'invited'). %>
+      <div class="u-flex u-flex-col u-gap-sm">
+        <span class="c-input__label" style="margin: 0;">Invitación del Master</span>
+        <% if (masterStatus === 'invited') { %>
+          <p class="u-text-sm u-text-muted u-m-0">
+            La invitación de activación expira a los 7 días. Reenviar genera un enlace nuevo (invalida el anterior) y lo envía a <%= masterEmail %>.
+          </p>
+          <div>
+            <%- include('frontend/components/button/ui', {
+              label: 'Reenviar invitación',
+              icon: 'send',
+              variant: 'secondary',
+              action: 'tenant:resend-invitation',
+              target: t.id,
+            }) %>
+          </div>
+        <% } else if (masterStatus === 'active') { %>
+          <p class="u-text-sm u-text-muted u-m-0">El Master ya activó su cuenta — no procede reenviar la invitación.</p>
+        <% } else { %>
+          <p class="u-text-sm u-text-muted u-m-0">Sin Master activable en este momento.</p>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="c-card c-card--p-md">
+  <header class="c-card__header">
+    <div class="c-card__header-content">
+      <div class="c-card__heading">
+        <h3 class="c-card__title">Acciones de Control</h3>
+      </div>
+    </div>
+  </header>
+  <div class="c-card__body">
+    <div class="u-flex u-flex-col u-gap-md">
+      <p class="u-text-sm u-text-muted u-m-0">
+        Al suspender un tenant, se bloquea el acceso temporalmente a sus endpoints y se fuerzan los cierres de sus conexiones activas de mensajería WebSocket.
+      </p>
+      <div class="u-flex u-gap-md">
+        <!-- target = "id|desiredStatus": el cliente envía desiredStatus en body para idempotencia. -->
+        <%- include('frontend/components/button/ui', {
+          label: toggleLabel,
+          variant: toggleBtnVariant,
+          action: 'tenant:set-status',
+          target: `${t.id}|${desiredStatus}`
+        }) %>
+        <!-- Iter UX A4: target=`id|subdomain`. El cliente exige tipear el subdominio y además
+             lo envía en body como confirmación server-side (SUBDOMAIN_MISMATCH → 422). -->
+        <%- include('frontend/components/button/ui', {
+          label: 'Eliminar tenant (soft-delete)',
+          icon: 'trash',
+          variant: 'danger',
+          action: 'tenant:delete',
+          target: `${t.id}|${t.subdomain}`
+        }) %>
+      </div>
+    </div>
+  </div>
+</section>

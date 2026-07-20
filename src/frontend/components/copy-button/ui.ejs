@@ -1,0 +1,22 @@
+<%
+  const text = locals.text || '';
+  const label = locals.label || '';
+  const customClass = locals.class || '';
+%>
+<button
+  type="button"
+  class="c-button c-button--ghost c-copy-button <%= customClass %>"
+  data-copy="<%= text %>"
+  data-state="idle"
+  aria-label="Copiar al portapapeles"
+>
+  <span class="c-copy-button__icon-copy">
+    <%- include('frontend/components/icon/ui', { name: 'copy', size: 'sm' }) %>
+  </span>
+  <span class="c-copy-button__icon-check">
+    <%- include('frontend/components/icon/ui', { name: 'check', size: 'sm' }) %>
+  </span>
+  <% if (label) { %>
+    <span class="c-copy-button__label"><%= label %></span>
+  <% } %>
+</button>

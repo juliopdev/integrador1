@@ -1,0 +1,40 @@
+<%
+  // Componente theme-settings (Iter 36): formulario autónomo para elegir skin + modo. El submit
+  // lo maneja su `ui.js` (aplica en runtime + persiste en localStorage). NO reutiliza `.c-input`
+  // ni ninguna clase de otro componente — usa sus propias clases `c-theme-settings__*` para no
+  // romper el montaje del componente `Input` (scss.md §6, ejs.md).
+  const skins = locals.skins || [
+    { value: 'default', label: 'Default' },
+    { value: 'minimalist', label: 'Minimalist' },
+    { value: 'glassmorphism', label: 'Glassmorphism' },
+  ];
+  const modes = locals.modes || [
+    { value: 'system', label: 'Automático (sistema)' },
+    { value: 'light', label: 'Claro' },
+    { value: 'dark', label: 'Oscuro' },
+  ];
+%>
+<form class="c-theme-settings" data-component="theme-settings">
+  <div class="c-theme-settings__field">
+    <label class="c-theme-settings__label" for="theme-settings-skin">Skin</label>
+    <select class="c-theme-settings__select" id="theme-settings-skin" name="skin">
+      <% skins.forEach((s) => { %>
+        <option value="<%= s.value %>"><%= s.label %></option>
+      <% }); %>
+    </select>
+  </div>
+  <div class="c-theme-settings__field">
+    <label class="c-theme-settings__label" for="theme-settings-mode">Modo</label>
+    <select class="c-theme-settings__select" id="theme-settings-mode" name="mode">
+      <% modes.forEach((m) => { %>
+        <option value="<%= m.value %>"><%= m.label %></option>
+      <% }); %>
+    </select>
+  </div>
+  <%- include('frontend/components/button/ui', {
+    type: 'submit',
+    variant: 'primary',
+    label: 'Aplicar',
+    class: 'u-w-full',
+  }) %>
+</form>

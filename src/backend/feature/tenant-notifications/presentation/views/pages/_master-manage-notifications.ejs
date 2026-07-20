@@ -1,0 +1,54 @@
+<%
+  const scheduled = locals.scheduled || [];
+
+  // Iter UX B1+B2: barrido de tecnicismos + textarea 6 líneas.
+  //   - "Cuerpo" → "Mensaje" (agnóstico, no técnico)
+  //   - "authenticated" → "Clientes registrados" (sin palabra en inglés que no aporta)
+  //   - "scheduledAt" (mención en backticks) desaparece del subtítulo
+  //   - textarea rows=4 → 6 (mensajes largos se ven completos sin scroll)
+  const composeForm = `
+    <form class="c-form" method="post" action="/api-system/v1/notifications" data-redirect="/dashboard/notifications">
+      ${include('frontend/components/input/ui', { name: 'title', type: 'text', label: 'Título del aviso *', required: true })}
+      <div class="l-notification-field">
+        <label class="l-notification-field__label" for="field-body">Mensaje *</label>
+        <textarea class="l-notification-field__textarea" id="field-body" name="body" rows="6" required placeholder="Escribí el mensaje que van a leer tus clientes…"></textarea>
+      </div>
+      <div class="l-notification-field">
+        <label class="l-notification-field__label" for="field-audience">¿A quién se lo enviás?</label>
+        <select class="l-notification-field__select" id="field-audience" name="audience">
+          <option value="public" selected>Todos los clientes</option>
+          <option value="authenticated">Sólo clientes registrados</option>
+        </select>
+      </div>
+      <div class="l-notification-field">
+        <label class="l-notification-field__label" for="field-scheduledAt">
+          ¿Cuándo lo enviás? (dejalo vacío para enviar ahora mismo)
+        </label>
+        <input class="l-notification-field__input" id="field-scheduledAt" type="datetime-local" name="scheduledAt" />
+      </div>
+      ${include('frontend/components/button/ui', { type: 'submit', variant: 'primary', label: 'Enviar aviso', class: 'u-w-full' })}
+    </form>
+  `;
+%>
+<div class="u-flex u-flex-col u-gap-md">
+  <%- include('frontend/components/breadcrumbs/ui', {
+    currentPath: locals.currentPath,
+    items: [
+      { label: 'Inicio', href: '/dashboard' },
+      { label: 'Notificaciones' },
+    ],
+  }) %>
+
+  <%- include('frontend/components/page-header/ui', {
+    title: 'Avisos a tus clientes',
+    subtitle: 'Redactá un aviso para tus clientes, o programalo para enviar más adelante.',
+  }) %>
+
+  <%- include('frontend/components/card/ui', {
+    title: 'Redactar aviso',
+    body: composeForm,
+    padding: 'lg',
+  }) %>
+
+  <%- include('backend/feature/tenant-notifications/presentation/views/sections/_list-scheduled', { scheduled }) %>
+</div>

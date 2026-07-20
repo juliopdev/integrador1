@@ -1,0 +1,98 @@
+// Estilos propietarios del feature manage-platform-tenant (scss.md §7): SOLO layout de sus
+// páginas/secciones que no califican como componente UI reutilizable. No pisa estilos de
+// componentes; solo tokens. Se emite vía `@use` desde el punto de compilación dashboard.scss.
+
+// Columnas centradas y acotadas de los formularios/detalle del gestor de inquilinos.
+.l-tenant-form {
+  max-width: 30rem; // ~480px — alta de tenant
+  margin-inline: auto;
+
+  // P2: campo select del plan (contrato). Mismo lenguaje visual que los inputs del form.
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  &__label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+  }
+
+  &__select {
+    height: var(--size-control);
+    padding: 0 var(--space-3);
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: var(--border-thin) solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-size: var(--font-size-md);
+
+    &:focus-visible {
+      outline: var(--border-thick) solid var(--color-focus-ring);
+      outline-offset: var(--border-thin);
+    }
+  }
+}
+
+.l-tenant-detail {
+  max-width: 40rem; // ~640px — gestión/edición de tenant
+  margin-inline: auto;
+}
+
+// P3: celda compuesta del listado (nombre del proyecto + subdominio secundario / plan + Ver).
+.l-tenant-cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+
+  &__name {
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+  }
+
+  &__sub {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+  }
+}
+
+// P3: lista de eventos del modal Histórico (badge + fecha por fila) y de features del plan.
+.l-history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  &--plain {
+    list-style: disc;
+    padding-left: var(--space-5);
+    display: block;
+
+    li { margin-bottom: var(--space-1); }
+  }
+}
+
+// Valores de la lista de detalle (par clave/valor del tenant). Modificadores de énfasis por token.
+.l-tenant-detail__value {
+  color: var(--color-text);
+
+  &--muted { color: var(--color-text-muted); }
+  &--strong { font-weight: var(--font-weight-bold); }
+  &--mono {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+}

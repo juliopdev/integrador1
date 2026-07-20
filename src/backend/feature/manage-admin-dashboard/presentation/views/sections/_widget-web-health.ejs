@@ -1,0 +1,39 @@
+<%
+  const wh = locals.webHealth || { backend: {}, providersActive: [], userAuthEnabled: false };
+  const backend = wh.backend || {};
+  const activeCount = (wh.providersActive || []).length;
+  const escHtml = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  const statusRow = (label, ok, detail) => `
+    <div class="l-health-row" data-ok="${ok ? 'true' : 'false'}">
+      <span class="l-health-row__dot" aria-hidden="true"></span>
+      <span class="l-health-row__label">${escHtml(label)}</span>
+      <span class="l-health-row__detail">${detail}</span>
+    </div>
+  `;
+
+  const backendDetail = backend.isPublished
+    ? `<span class="l-health-row__ok">Estructura activa · ${backend.resourceCount} secciones creadas</span>`
+    : `<span class="l-health-row__pending">Preparando contenido...</span>`;
+  const providersDetail = activeCount > 0
+    ? `<span class="l-health-row__ok">Conexión en línea activa</span>`
+    : `<span class="l-health-row__pending">Sin configurar</span>`;
+  const userAuthDetail = wh.userAuthEnabled
+    ? `<span class="l-health-row__ok">Abierto al público</span>`
+    : `<span class="l-health-row__pending">Desactivado temporalmente</span>`;
+
+  let bodyContent = `
+    <div class="l-home-widget__body">
+      ${statusRow('Estructura del sitio', backend.isPublished, backendDetail)}
+      ${statusRow('Conexiones y servicios', activeCount > 0, providersDetail)}
+      ${statusRow('Acceso de clientes', wh.userAuthEnabled, userAuthDetail)}
+      <p class="l-home-widget__note">Estado y disponibilidad general de los servicios de tu web.</p>
+    </div>
+  `;
+%>
+<%- include('frontend/components/card/ui', {
+  title: 'Estado de tu web',
+  headerActions: `<span class="l-home-widget__link l-home-widget__link--muted">${include('frontend/components/icon/ui', { name: 'activity', size: 'sm' })} operativo</span>`,
+  body: bodyContent,
+  padding: 'md'
+}) %>

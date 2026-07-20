@@ -1,0 +1,100 @@
+@use 'sass:meta';
+
+@mixin styles {
+  .c-search-input {
+    width: 100%;
+
+    &__wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    &__field {
+      width: 100%;
+      height: var(--size-control);
+      padding: 0 2.5rem;
+      background-color: var(--color-surface-raised);
+      color: var(--color-text);
+      border: var(--border-thin) solid var(--color-border-strong);
+      border-radius: var(--radius-md);
+      font-family: var(--font-sans);
+      font-size: var(--font-size-sm);
+      transition: border-color var(--duration-fast) var(--easing-standard),
+                  box-shadow var(--duration-fast) var(--easing-standard);
+
+      &::placeholder {
+        color: var(--color-text-muted);
+      }
+
+      &:focus-visible {
+        outline: none;
+        border-color: var(--color-primary-600);
+        box-shadow: 0 0 0 var(--border-thick) var(--color-focus-ring);
+      }
+
+      &::-webkit-search-cancel-button {
+        -webkit-appearance: none;
+        appearance: none;
+      }
+    }
+
+    &__icon-search {
+      position: absolute;
+      left: var(--space-3);
+      color: var(--color-text-muted);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+    }
+
+    &__clear {
+      position: absolute;
+      right: var(--space-3);
+      display: flex;
+      align-items: center;
+      background: none;
+      border: none;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      padding: var(--space-1);
+      border-radius: var(--radius-full);
+      transition: opacity var(--duration-fast) var(--easing-standard),
+                  background-color var(--duration-fast) var(--easing-standard),
+                  color var(--duration-fast) var(--easing-standard);
+
+      &:hover {
+        background-color: var(--color-surface-raised);
+        color: var(--color-text);
+      }
+    }
+
+    &__spinner {
+      position: absolute;
+      right: var(--space-3);
+      display: none;
+      align-items: center;
+    }
+
+    &--has-value &__clear {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    &[data-state="loading"] {
+      .c-search-input__spinner {
+        display: flex;
+      }
+      .c-search-input__clear.c-search-input__clear {
+        display: none;
+      }
+    }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

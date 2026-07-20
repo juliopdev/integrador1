@@ -1,0 +1,13 @@
+<%
+  // Badges vía include() (devuelve string) → la sección no escribe la clase c-badge a mano.
+  const isoBadge = include('frontend/components/badge/ui', { variant: 'success', label: 'Aislado' });
+  const activeBadge = include('frontend/components/badge/ui', { variant: 'info', label: 'Activo' });
+  const readyBadge = include('frontend/components/badge/ui', { variant: 'success', label: 'Listo' });
+  const metricsBody = `
+    <ul class="c-health-list">
+      <li class="c-health-item"><span class="c-health-item__name">Base de Datos Tenant (SQLite)</span>${isoBadge}</li>
+      <li class="c-health-item"><span class="c-health-item__name">Canales WebSocket</span>${activeBadge}</li>
+      <li class="c-health-item"><span class="c-health-item__name">Motor API No-Code</span>${readyBadge}</li>
+    </ul>`;
+%>
+<%- include('frontend/components/card/ui', { title: 'Estado de Recursos', body: metricsBody, padding: 'md' }) %>

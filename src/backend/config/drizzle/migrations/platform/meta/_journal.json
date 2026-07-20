@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1782569506252,
+      "tag": "0000_silent_the_liberteens",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1783120564607,
+      "tag": "0001_zippy_captain_america",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783892982406,
+      "tag": "0002_sturdy_inhumans",
+      "breakpoints": true
+    }
+  ]
+}

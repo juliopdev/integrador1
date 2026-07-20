@@ -1,0 +1,37 @@
+@use 'sass:meta';
+
+@mixin styles {
+  .c-toast-stack {
+    position: fixed;
+    top: var(--space-4);
+    right: var(--space-4);
+    z-index: var(--z-toast);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .c-toast {
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    font-size: var(--font-size-sm);
+    animation: var(--motion-enter) var(--duration-fast) var(--easing-decelerate);
+    transition: opacity 0.3s var(--easing-accelerate), transform 0.3s var(--easing-accelerate);
+
+    &--exit {
+      opacity: 0;
+      transform: translateY(-20px) scale(0.95);
+    }
+
+    // fondo de estado + su on-color (contraste por el tema)
+    &--success { background-color: var(--color-success); color: var(--color-on-success); }
+    &--warning { background-color: var(--color-warning); color: var(--color-on-warning); }
+    &--error { background-color: var(--color-error); color: var(--color-on-error); }
+    &--info { background-color: var(--color-info); color: var(--color-on-info); }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

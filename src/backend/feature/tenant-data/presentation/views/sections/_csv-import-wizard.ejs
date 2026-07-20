@@ -1,0 +1,422 @@
+<%
+  const r = locals.resource || {};
+  const fieldsJson = JSON.stringify(r.fields);
+  const resourceName = r.name;
+%>
+
+<%- include('frontend/components/modal/ui', {
+  id: 'import-csv-modal',
+  title: 'Importar desde archivo CSV',
+  body: `
+    <div class="c-csv-wizard" data-resource="${resourceName}" data-fields='${fieldsJson.replace(/'/g, '&#39;')}'>
+      <!-- Paso 1: Selección de Archivo -->
+      <div class="c-csv-wizard__step" data-step="1">
+        <p class="u-text-muted u-text-sm">Sube tu archivo .csv local para importar datos masivamente.</p>
+        <div class="c-csv-dropzone" id="csv-drop-zone">
+          ${include('frontend/components/icon/ui', { name: 'send', size: 'lg' })}
+          <span class="c-csv-dropzone__label">Arrastra tu archivo CSV aquí o haz clic para buscar</span>
+          <input type="file" id="csv-file-input" accept=".csv" class="c-csv-dropzone__input" />
+        </div>
+        <div class="u-flex u-justify-between u-align-center" style="margin-top: var(--space-4);">
+          <a href="#" id="download-template-btn" class="u-link u-text-xs">Descargar plantilla modelo (.csv)</a>
+        </div>
+        <div class="u-mt-md" style="margin-top: var(--space-4); border-top: var(--border-thin) solid var(--color-border); padding-top: var(--space-3);">
+          <span style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--color-text-muted); display: block; margin-bottom: var(--space-2);">MODO DE IMPORTACIÓN</span>
+          <div style="display: flex; gap: var(--space-4);">
+            <label style="display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-size-sm); cursor: pointer; color: var(--color-text);">
+              <input type="radio" name="csv-import-mode" value="append" checked style="cursor: pointer;" />
+              <span>Agregar registros</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-size-sm); cursor: pointer; color: var(--color-text);">
+              <input type="radio" name="csv-import-mode" value="overwrite" style="cursor: pointer;" />
+              <span class="u-text-danger" style="font-weight: var(--font-weight-medium);">Sobreescribir todo</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 2: Confirmación -->
+      <div class="c-csv-wizard__step u-hidden" data-step="2" style="display: none;">
+        <div class="u-flex u-flex-col u-gap-sm">
+          <p class="u-text-muted u-text-sm">¡Archivo cargado exitosamente! Todo está listo para procesar la importación.</p>
+          <div class="c-csv-summary-box" style="padding: var(--space-3); background: var(--color-surface-raised); border-radius: var(--radius-md); border: var(--border-thin) solid var(--color-border); font-size: var(--font-size-sm);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-2);">
+              <strong>Registros leídos:</strong> <span id="summary-total-rows">0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <strong>Campos detectados:</strong> <span id="summary-mapped-fields">0</span>
+            </div>
+          </div>
+          <div class="c-progress u-hidden" id="import-progress-container" style="margin-top: var(--space-3); display: none;">
+            <div class="c-progress__bar" style="width: 0%;" id="import-progress-bar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `,
+  footer: `
+    <div class="u-flex u-justify-between u-w-full" style="width: 100%; display: flex; justify-content: space-between;">
+      ${include('frontend/components/button/ui', {
+        label: 'Cancelar',
+        variant: 'ghost',
+        size: 'sm',
+        action: 'modal:close',
+        target: 'import-csv-modal'
+      })}
+      <div class="u-flex u-gap-xs" style="display: flex; gap: var(--space-2);">
+        ${include('frontend/components/button/ui', {
+          label: 'Atrás',
+          variant: 'secondary',
+          size: 'sm',
+          id: 'wizard-back-btn',
+          disabled: true
+        })}
+        ${include('frontend/components/button/ui', {
+          label: 'Siguiente',
+          variant: 'primary',
+          size: 'sm',
+          id: 'wizard-next-btn',
+          disabled: true
+        })}
+      </div>
+    </div>
+  `
+}) %>
+
+<!-- Lógica del Asistente de Importación CSV -->
+<script>
+  (() => {
+    const initCSVWizard = () => {
+      // 1. Abrir/Cerrar Modal
+      const modalEl = document.getElementById('import-csv-modal');
+      if (!modalEl) return;
+
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.attributeName === 'data-open' && modalEl.dataset.open === 'true') {
+            resetWizard();
+          }
+        });
+      });
+      observer.observe(modalEl, { attributes: true });
+
+      // Auto-abrir modal si la URL contiene el parámetro ?import=true
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('import') === 'true') {
+        setTimeout(() => {
+          modalEl.dataset.open = 'true';
+        }, 50);
+      }
+
+    // 2. Elementos del Wizard
+    const dropZone = document.getElementById('csv-drop-zone');
+    const fileInput = document.getElementById('csv-file-input');
+    const downloadTemplateBtn = document.getElementById('download-template-btn');
+    const mappingContainer = document.getElementById('mapping-fields-container');
+    const summaryTotalRows = document.getElementById('summary-total-rows');
+    const summaryMappedFields = document.getElementById('summary-mapped-fields');
+    const backBtn = document.getElementById('wizard-back-btn');
+    const nextBtn = document.getElementById('wizard-next-btn');
+    const nextBtnLabel = nextBtn.querySelector('.c-button__label');
+
+    const wizardContainer = document.querySelector('.c-csv-wizard');
+    const resourceName = wizardContainer.dataset.resource;
+    const fields = JSON.parse(wizardContainer.dataset.fields);
+
+    let csvData = null;
+    let csvHeaders = [];
+    let currentStep = 1;
+
+    // Generador de archivo plantilla CSV
+    if (downloadTemplateBtn) {
+      downloadTemplateBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const headerRow = fields.map(f => f.name).join(',');
+        const exampleRow = fields.map(f => {
+          const name = f.name.toLowerCase();
+          if (name === 'title' || name === 'name' || name === 'nombre' || name === 'titulo') return 'Ejemplo de Producto';
+          if (name.includes('price') || name.includes('precio')) return '99.90';
+          if (name.includes('stock') || name.includes('cantidad') || name.includes('quantity')) return '15';
+          if (name.includes('description') || name.includes('descripcion') || name.includes('detalles')) return 'Descripción del producto';
+          if (f.type === 'boolean' || name.includes('active') || name.includes('activo') || name.includes('public')) return 'true';
+          if (f.type === 'integer') return '10';
+          if (f.type === 'float') return '19.99';
+          if (f.type === 'date') return '2026-07-20';
+          if (f.type === 'datetime') return '2026-07-20 12:00:00';
+          if (name.includes('image') || name.includes('url') || name.includes('logo') || name.includes('photo')) return 'https://images.unsplash.com/photo-1523275335684-37898b6baf30';
+          return 'valor';
+        }).join(',');
+        const blob = new Blob(['\uFEFF' + 'sep=,\n' + headerRow + '\n' + exampleRow], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', `plantilla_${resourceName}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+    }
+
+    // Drag & Drop
+    if (dropZone) {
+      dropZone.addEventListener('click', () => fileInput.click());
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--color-primary-500)';
+        dropZone.style.background = 'var(--color-primary-5)';
+      });
+      dropZone.addEventListener('dragleave', () => {
+        dropZone.style.borderColor = 'var(--color-border)';
+        dropZone.style.background = 'transparent';
+      });
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--color-border)';
+        dropZone.style.background = 'transparent';
+        const file = e.dataTransfer.files[0];
+        if (file && file.name.endsWith('.csv')) {
+          handleFileSelect(file);
+        }
+      });
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) handleFileSelect(file);
+      });
+    }
+
+    function handleFileSelect(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        parseCSV(e.target.result);
+      };
+      reader.readAsText(file);
+    }
+
+    function detectDelimiter(line) {
+      const commas = (line.match(/,/g) || []).length;
+      const semicolons = (line.match(/;/g) || []).length;
+      return semicolons > commas ? ';' : ',';
+    }
+
+    // Parse simple de CSV
+    function parseCSV(text) {
+      let lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+      if (lines.length === 0) return;
+
+      // Omitir directiva de delimitador sep= si está presente
+      if (lines[0].toLowerCase().startsWith('sep=')) {
+        lines.shift();
+      }
+
+      if (lines.length === 0) return;
+
+      const delimiter = detectDelimiter(lines[0]);
+      csvHeaders = splitCSVLine(lines[0], delimiter);
+      csvData = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = splitCSVLine(lines[i], delimiter);
+        if (values.length === csvHeaders.length) {
+          const rowObj = {};
+          csvHeaders.forEach((header, index) => {
+            rowObj[header] = values[index];
+          });
+          csvData.push(rowObj);
+        }
+      }
+
+      if (csvData.length > 0) {
+        dropZone.style.borderColor = 'var(--color-success)';
+        dropZone.querySelector('.c-csv-dropzone__label').innerHTML = `<strong>Archivo cargado:</strong> ${fileInput.files[0]?.name || 'dragged.csv'} (${csvData.length} registros)`;
+        nextBtn.removeAttribute('disabled');
+      }
+    }
+
+    function splitCSVLine(line, delimiter = ',') {
+      // Split básico considerando comillas
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === delimiter && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    }
+
+    // Navegación
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        if (currentStep === 1) {
+          setupConfirmStep();
+          goToStep(2);
+        } else if (currentStep === 2) {
+          processImport();
+        }
+      });
+    }
+
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        if (currentStep === 2) {
+          goToStep(1);
+        }
+      });
+    }
+
+    function goToStep(step) {
+      currentStep = step;
+      document.querySelectorAll('.c-csv-wizard__step').forEach((el, index) => {
+        if (index + 1 === step) {
+          el.style.display = '';
+          el.classList.remove('u-hidden');
+        } else {
+          el.style.display = 'none';
+          el.classList.add('u-hidden');
+        }
+      });
+
+      backBtn.disabled = step === 1;
+      if (step === 1) backBtn.setAttribute('disabled', 'true');
+      else backBtn.removeAttribute('disabled');
+
+      if (step === 2) {
+        nextBtnLabel.textContent = 'Confirmar e Importar';
+      } else {
+        nextBtnLabel.textContent = 'Siguiente';
+      }
+    }
+
+    function setupConfirmStep() {
+      summaryTotalRows.textContent = csvData.length;
+      let matchedCount = 0;
+      fields.forEach(field => {
+        const matchedHeader = csvHeaders.find(h => h.toLowerCase().trim() === field.name.toLowerCase().trim());
+        if (matchedHeader) {
+          matchedCount++;
+        }
+      });
+      summaryMappedFields.textContent = `${matchedCount} de ${fields.length}`;
+    }
+
+    function processImport() {
+      // 1. Compilar los datos mapeados por correspondencia directa de nombres
+      const mappedRows = csvData.map(csvRow => {
+        const row = {};
+        fields.forEach(field => {
+          const matchedHeader = csvHeaders.find(h => h.toLowerCase().trim() === field.name.toLowerCase().trim());
+          if (matchedHeader) {
+            const csvVal = csvRow[matchedHeader];
+            if (csvVal !== undefined && csvVal !== '') {
+              if (field.type === 'float') row[field.name] = parseFloat(csvVal);
+              else if (field.type === 'integer') row[field.name] = parseInt(csvVal, 10);
+              else if (field.type === 'boolean') {
+                const lower = csvVal.toLowerCase().trim();
+                row[field.name] = (lower === 'true' || lower === 'sí' || lower === 'si' || lower === '1' || lower === 'yes');
+              }
+              else row[field.name] = csvVal;
+            }
+          }
+        });
+        return row;
+      });
+
+      // 2. Mostrar progreso
+      nextBtn.setAttribute('disabled', 'true');
+      nextBtnLabel.textContent = 'Importando...';
+      const progressBar = document.getElementById('import-progress-bar');
+      const progressContainer = document.getElementById('import-progress-container');
+      
+      if (progressContainer) {
+        progressContainer.style.display = '';
+        progressContainer.classList.remove('u-hidden');
+      }
+      if (progressBar) progressBar.style.width = '50%';
+
+      // 3. Enviar al Endpoint bulk
+      const modeRadio = modalEl.querySelector('input[name="csv-import-mode"]:checked');
+      const importMode = modeRadio ? modeRadio.value : 'append';
+
+      fetch(`/api-system/v1/data/${resourceName}/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows: mappedRows, mode: importMode })
+      })
+      .then(async res => {
+        const body = await res.json();
+        if (!res.ok) {
+          throw new Error(body.error?.message || 'Error en el servidor al importar los datos.');
+        }
+        return body;
+      })
+      .then(data => {
+        if (progressBar) progressBar.style.width = '100%';
+        
+        // Mostrar toast o recargar
+        showToast('success', `Se importaron ${data.data.count} registros con éxito.`);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1200);
+      })
+      .catch(err => {
+        if (progressBar) progressBar.style.width = '0%';
+        if (progressContainer) {
+          progressContainer.style.display = 'none';
+          progressContainer.classList.add('u-hidden');
+        }
+        nextBtn.removeAttribute('disabled');
+        nextBtnLabel.textContent = 'Confirmar e Importar';
+        showToast('error', err.message);
+      });
+    }
+
+    function showToast(variant, message) {
+      const toastContainer = document.getElementById('toast-container') || document.querySelector('.c-toast-stack');
+      if (toastContainer) {
+        const toastHtml = `
+          <div class="c-toast c-toast--${variant} transition-fade" role="alert" style="margin-top: 8px;">
+            <div class="c-toast__body">
+              <span class="c-toast__message">${message}</span>
+            </div>
+          </div>
+        `;
+        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+        const added = toastContainer.lastElementChild;
+        setTimeout(() => {
+          added.remove();
+        }, 4000);
+      } else {
+        alert(message);
+      }
+    }
+
+    function resetWizard() {
+      currentStep = 1;
+      csvData = null;
+      csvHeaders = [];
+      if (fileInput) fileInput.value = '';
+      if (dropZone) {
+        dropZone.style.borderColor = 'var(--color-border)';
+        dropZone.querySelector('.c-csv-dropzone__label').textContent = 'Arrastra tu archivo CSV aquí o haz clic para buscar';
+      }
+      nextBtn.setAttribute('disabled', 'true');
+      goToStep(1);
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCSVWizard);
+  } else {
+    initCSVWizard();
+  }
+})();</script>

@@ -1,0 +1,41 @@
+<%
+  const title = locals.title || 'Soporte en Vivo';
+  const messages = locals.messages || [];
+%>
+<div class="c-chat-box">
+  <div class="c-chat-box__header">
+    <div class="c-chat-box__header-info">
+      <span class="c-chat-box__status-dot" aria-hidden="true"></span>
+      <span class="c-chat-box__title"><%= title %></span>
+    </div>
+  </div>
+  
+  <div class="c-chat-box__body" tabindex="0">
+    <div class="c-chat-box__messages js-chat-messages">
+      <% messages.forEach(msg => { %>
+        <div class="c-chat-box__message-wrapper c-chat-box__message-wrapper--<%= msg.own ? 'sent' : 'received' %>">
+          <div class="c-chat-box__bubble">
+            <p class="c-chat-box__text"><%= msg.text %></p>
+            <% if (msg.timestamp) { %>
+              <time class="c-chat-box__time"><%= msg.timestamp %></time>
+            <% } %>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <form class="c-chat-box__footer js-chat-form">
+    <input
+      type="text"
+      name="message"
+      class="c-chat-box__input js-chat-input"
+      placeholder="Escribe un mensaje..."
+      autocomplete="off"
+      required
+    >
+    <button type="submit" class="c-button c-button--primary c-chat-box__send-btn">
+      Enviar
+    </button>
+  </form>
+</div>

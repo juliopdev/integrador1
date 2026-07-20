@@ -1,0 +1,16 @@
+// Tema glassmorphism: compone los subgrupos en un único mapa `$theme` exportable.
+
+@use 'light-mode' as light;
+@use 'dark-mode' as dark;
+@use 'measures' as measures;
+@use 'typefaces' as typefaces;
+@use 'animations' as animations;
+
+$theme: (
+  'theme-name': ('glassmorphism'),
+  'light-mode': light.$light-mode,
+  'dark-mode': dark.$dark-mode,
+  'measures': measures.$measures,
+  'typefaces': typefaces.$typefaces,
+  'animations': animations.$animations,
+);

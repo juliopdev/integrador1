@@ -1,0 +1,21 @@
+<%
+  const tenant = locals.tenant || {};
+  const deploy = locals.deploy || {};
+  const externalUrlValue = deploy?.mode === 'external' ? deploy.externalUrl : '';
+  const escHtml = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+%>
+<form class="c-form" method="post" action="/api-system/v1/frontends/<%= escHtml(tenant.id) %>/external" data-method="put" data-redirect="/dashboard/frontends">
+  <%- include('frontend/components/input/ui', {
+    name: 'externalUrl',
+    type: 'url',
+    label: 'URL externa (HTTPS)',
+    value: externalUrlValue,
+    required: true,
+    placeholder: 'https://mitienda.com',
+  }) %>
+  <p class="u-text-muted u-text-sm u-m-0">
+    Caddy redirigirá <code><%= escHtml(tenant.subdomain) %>.[apex]</code> a esta URL cuando esté activo.
+    Sólo se aceptan URLs HTTPS sin puertos personalizados.
+  </p>
+  <%- include('frontend/components/button/ui', { type: 'submit', variant: 'primary', label: 'Guardar redirect externo', class: 'u-w-full' }) %>
+</form>

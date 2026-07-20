@@ -1,0 +1,59 @@
+<%
+  const currentPage = locals.currentPage || 1;
+  const totalPages = locals.totalPages || 1;
+  const baseUrl = locals.baseUrl || null;
+  const action = locals.action || 'page:change';
+
+  const hasPrev = currentPage > 1;
+  const hasNext = currentPage < totalPages;
+
+  const prevUrl = baseUrl ? `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}page=${currentPage - 1}` : '#';
+  const nextUrl = baseUrl ? `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}page=${currentPage + 1}` : '#';
+%>
+<nav class="c-pagination" aria-label="Paginación">
+  <div class="c-pagination__wrapper">
+    <% if (baseUrl) { %>
+      <a
+        class="c-pagination__btn <%= !hasPrev ? 'c-pagination__btn--disabled' : '' %>"
+        href="<%= prevUrl %>"
+        <% if (!hasPrev) { %>aria-disabled="true" tabindex="-1" onclick="return false;"<% } %>
+      >
+        <span aria-hidden="true">‹</span> Anterior
+      </a>
+    <% } else { %>
+      <button
+        type="button"
+        class="c-pagination__btn"
+        <% if (!hasPrev) { %>disabled<% } %>
+        data-action="<%= action %>"
+        data-target="<%= currentPage - 1 %>"
+      >
+        <span aria-hidden="true">‹</span> Anterior
+      </button>
+    <% } %>
+
+    <span class="c-pagination__info">
+      Página <strong class="c-pagination__current"><%= currentPage %></strong> de <strong class="c-pagination__total"><%= totalPages %></strong>
+    </span>
+
+    <% if (baseUrl) { %>
+      <a
+        class="c-pagination__btn <%= !hasNext ? 'c-pagination__btn--disabled' : '' %>"
+        href="<%= nextUrl %>"
+        <% if (!hasNext) { %>aria-disabled="true" tabindex="-1" onclick="return false;"<% } %>
+      >
+        Siguiente <span aria-hidden="true">›</span>
+      </a>
+    <% } else { %>
+      <button
+        type="button"
+        class="c-pagination__btn"
+        <% if (!hasNext) { %>disabled<% } %>
+        data-action="<%= action %>"
+        data-target="<%= currentPage + 1 %>"
+      >
+        Siguiente <span aria-hidden="true">›</span>
+      </button>
+    <% } %>
+  </div>
+</nav>

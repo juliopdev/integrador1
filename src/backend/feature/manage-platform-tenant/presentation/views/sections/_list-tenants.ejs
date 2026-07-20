@@ -1,0 +1,289 @@
+<%
+  // Listado de tenants (P3): Tabla + modales de históricos y planes.
+  const tenantsList = locals.tenants || [];
+  const tenantHostSuffix = locals.tenantHostSuffix || 'localhost:3000';
+  // `escHtml`, `fmtDate`, `fmtDateTime` y `tenantCell` vienen del defaultContext (common/views/helpers.js).
+
+  const EVENT_LABELS = {
+    created: { label: 'Creado', variant: 'neutral' },
+    enabled: { label: 'Habilitado', variant: 'success' },
+    disabled: { label: 'Deshabilitado', variant: 'error' },
+  };
+
+  const FEATURE_LABELS = {
+    maintenanceMonths: (v) => `Mantenimiento post-contrato: ${v} mes(es)`,
+    maxSubdomains: (v) => `Subdominios registrables: ${v}`,
+    deployMonths: (v) => (v == null ? 'Deploy: permanente' : `Deploy: ${v} mes(es)`),
+  };
+%>
+
+<!-- Tabla de Inquilinos -->
+<%
+  const tableHtml = include('frontend/components/data-table/ui', {
+    columns: [
+      { key: 'tenant', label: 'Tenant' },
+      { key: 'status', label: 'Estado' },
+      { key: 'history', label: 'Histórico' },
+      { key: 'plan', label: 'Plan' },
+      { key: 'actions', label: 'Acciones', align: 'right' }
+    ],
+    rows: tenantsList.map(t => {
+      let variant = 'neutral';
+      let label = t.status;
+      if (t.status === 'active') {
+        variant = 'success';
+        label = 'Activo';
+      } else if (t.status === 'suspended') {
+        variant = 'error';
+        label = 'Suspendido';
+      } else if (t.status === 'pending') {
+        variant = 'warning';
+        label = 'Pendiente';
+      }
+
+      const projectName = t.projectName || t.subdomain;
+
+      return {
+        tenant: tenantCell({ projectName, subdomain: t.subdomain, hostSuffix: tenantHostSuffix }),
+        status: include('frontend/components/badge/ui', { variant, label }),
+        // Iter UX: el label de cada celda ES el disparador del modal — evita el doble botón "Ver"
+        // que confundía sobre qué se estaba abriendo. La celda entera es click-target.
+        history: include('frontend/components/button/ui', {
+          label: 'Cronología',
+          icon: 'eye',
+          variant: 'ghost',
+          size: 'sm',
+          action: 'modal:open',
+          target: `history-modal-${t.id}`,
+        }),
+        plan: t.plan
+          ? include('frontend/components/button/ui', {
+              label: t.plan.label,
+              icon: 'eye',
+              variant: 'ghost',
+              size: 'sm',
+              action: 'modal:open',
+              target: `plan-modal-${t.id}`,
+            })
+          : '<span class="u-text-muted">—</span>',
+        actions: include('frontend/components/button/ui', {
+          label: 'Gestionar',
+          icon: 'cog',
+          href: `/dashboard/tenants/${t.id}/update`,
+          variant: 'ghost',
+          size: 'sm'
+        })
+      };
+    }),
+    emptyState: {
+      title: 'Aún no hay tenants aprovisionados',
+      message: 'Aprovisiona el primer tenant para empezar a operar la plataforma.',
+      cta: {
+        label: 'Aprovisionar tenant',
+        icon: 'plus',
+        href: '/dashboard/tenants/create',
+      },
+    }
+  });
+
+  const searchHtml = include('frontend/components/search-input/ui', {
+    name: 'query',
+    placeholder: 'Buscar tenants...',
+    id: 'table-search-input',
+  });
+
+  const paginationHtml = include('frontend/components/pagination/ui', {
+    currentPage: 1,
+    totalPages: 1,
+  });
+
+  const toolbarHtml = `
+    <div class="l-table-toolbar u-mb-md" style="max-width: 25rem;">
+      ${searchHtml}
+    </div>
+  `;
+%>
+
+<%- include('frontend/components/card/ui', {
+  body: `
+    ${toolbarHtml}
+    ${tableHtml}
+    <div class="u-mt-md" id="table-pagination-container">
+      ${paginationHtml}
+    </div>
+  `,
+  padding: 'md'
+}) %>
+
+<% if (tenantsList.length > 0) { %>
+  <script>
+    (() => {
+      const initTableFilter = () => {
+        const container = document.getElementById('table-pagination-container');
+        const parent = container ? container.closest('.c-card') : document;
+        const searchInput = parent.querySelector('.c-search-input__field');
+        const clearBtn = parent.querySelector('.c-search-input__clear');
+        const tableRows = Array.from(parent.querySelectorAll('.c-data-table__body .c-data-table__row'));
+        const prevBtn = container ? container.querySelector('.c-pagination__btn:first-of-type') : null;
+        const nextBtn = container ? container.querySelector('.c-pagination__btn:last-of-type') : null;
+        const currentLabel = container ? container.querySelector('.c-pagination__current') : null;
+        const totalLabel = container ? container.querySelector('.c-pagination__total') : null;
+
+        if (tableRows.length === 0) {
+          if (container) container.style.display = 'none';
+          return;
+        }
+
+        let filteredRows = [...tableRows];
+        let currentPage = 1;
+        const itemsPerPage = 5;
+
+        function updateTable() {
+          const totalPages = Math.max(1, Math.ceil(filteredRows.length / itemsPerPage));
+          if (currentPage > totalPages) currentPage = totalPages;
+          if (currentPage < 1) currentPage = 1;
+
+          tableRows.forEach(row => row.style.display = 'none');
+
+          const start = (currentPage - 1) * itemsPerPage;
+          const end = start + itemsPerPage;
+          const pageRows = filteredRows.slice(start, end);
+          pageRows.forEach(row => row.style.display = '');
+
+          if (currentLabel) currentLabel.textContent = currentPage;
+          if (totalLabel) totalLabel.textContent = totalPages;
+
+          if (prevBtn) {
+            if (currentPage === 1) {
+              prevBtn.setAttribute('disabled', 'true');
+            } else {
+              prevBtn.removeAttribute('disabled');
+            }
+          }
+          if (nextBtn) {
+            if (currentPage === totalPages) {
+              nextBtn.setAttribute('disabled', 'true');
+            } else {
+              nextBtn.removeAttribute('disabled');
+            }
+          }
+
+          if (container) {
+            container.style.display = filteredRows.length <= itemsPerPage ? 'none' : '';
+          }
+        }
+
+        function filterTable() {
+          const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+          filteredRows = tableRows.filter(row => {
+            if (query === '') return true;
+            const cells = Array.from(row.querySelectorAll('.c-data-table__cell'));
+            for (let i = 0; i < cells.length - 1; i++) {
+              if (cells[i].textContent.toLowerCase().includes(query)) {
+                return true;
+              }
+            }
+            return false;
+          });
+
+          currentPage = 1;
+          updateTable();
+        }
+
+        if (searchInput) {
+          searchInput.addEventListener('input', filterTable);
+        }
+
+        if (clearBtn) {
+          clearBtn.addEventListener('click', () => {
+            setTimeout(() => {
+              filterTable();
+            }, 0);
+          });
+        }
+
+        if (prevBtn) {
+          prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+              currentPage--;
+              updateTable();
+            }
+          });
+        }
+
+        if (nextBtn) {
+          nextBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+            if (currentPage < totalPages) {
+              currentPage++;
+              updateTable();
+            }
+          });
+        }
+
+        updateTable();
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTableFilter);
+      } else {
+        initTableFilter();
+      }
+    })();
+  </script>
+<% } %>
+
+<%# Modales SSR por fila: histórico de habilitación + contrato del plan. %>
+<% tenantsList.forEach((t) => { %>
+  <%
+    const events = t.statusEvents || [];
+    const nextSuspension = t.membership
+      ? (t.membership.endsAt ? fmtDate(t.membership.endsAt) : null)
+      : null;
+    const historyBody = `
+      ${events.length === 0
+        ? '<p class="u-text-muted u-text-sm u-m-0">Sin eventos registrados (tenant previo al histórico).</p>'
+        : `<ul class="l-history-list">${events.map((e) => {
+            const meta = EVENT_LABELS[e.event] || { label: e.event, variant: 'neutral' };
+            return `<li class="l-history-list__item">
+              ${include('frontend/components/badge/ui', { variant: meta.variant, label: meta.label })}
+              <span class="u-text-sm">${fmtDateTime(e.createdAt)}</span>
+            </li>`;
+          }).join('')}</ul>`
+      }
+      <p class="u-text-sm u-mt-md u-m-0">
+        <strong>Próxima suspensión:</strong>
+        ${nextSuspension ? nextSuspension : '<span class="u-text-success">Permanente</span>'}
+      </p>
+    `;
+  %>
+  <%- include('frontend/components/modal/ui', {
+    id: `history-modal-${t.id}`,
+    title: `Histórico · ${t.projectName || t.subdomain}`,
+    body: historyBody,
+  }) %>
+
+  <% if (t.plan) { %>
+    <%
+      const featureItems = Object.entries(t.plan.features || {}).map(([k, v]) => {
+        const render = FEATURE_LABELS[k];
+        return `<li>${render ? render(v) : `${k}: ${v}`}</li>`;
+      }).join('');
+      const planBody = `
+        <p class="u-text-sm u-mb-sm"><strong>${t.plan.label}</strong>
+          ${t.plan.description ? `— <span class="u-text-muted">${t.plan.description}</span>` : ''}
+        </p>
+        ${featureItems ? `<ul class="l-history-list l-history-list--plain">${featureItems}</ul>` : ''}
+        <p class="u-text-muted u-text-xs u-mt-md u-m-0">
+          Contrato referencial: describe lo acordado, no impone límites técnicos.
+          </p>
+      `;
+    %>
+    <%- include('frontend/components/modal/ui', {
+      id: `plan-modal-${t.id}`,
+      title: `Plan · ${t.projectName || t.subdomain}`,
+      body: planBody,
+    }) %>
+  <% } %>
+<% }); %>

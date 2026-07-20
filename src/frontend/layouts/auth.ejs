@@ -1,75 +1,17 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="<%= locals.skin || 'glassmorphism' %>" data-theme-mode="<%= locals.mode || 'system' %>">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %> - SaaS Multi-tenant</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  
-  <!-- ES: Carga dinámica del CSS según el ámbito (Superadmin vs Tenant) -->
-  <link rel="stylesheet" href="<%= stylesheet %>" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title><%= locals.pageTitle || 'Mi Baas' %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/styles/auth.css" />
 </head>
-<body class="theme-glassmorphism" data-theme="dark">
-  
-  <%- body %>
-
-  <!-- ES: Carga de GSAP para micro-animaciones cliente -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const body = document.body;
-      const toggleBtn = document.getElementById('theme-toggle');
-      
-      // ES: Cargar e inicializar tema guardado en localStorage.
-      const savedTheme = localStorage.getItem('theme') || 'dark';
-      body.setAttribute('data-theme', savedTheme);
-      if (toggleBtn) {
-        updateToggleButtonIcon(savedTheme);
-      }
-
-      // ES: Animación de entrada GSAP para la tarjeta de acceso.
-      if (document.querySelector('.auth-card')) {
-        gsap.from('.auth-card', {
-          opacity: 0,
-          y: 30,
-          scale: 0.96,
-          duration: 0.7,
-          ease: 'power3.out'
-        });
-      }
-
-      // ES: Escuchador del botón para alternar el modo claro/oscuro.
-      if (toggleBtn) {
-        toggleBtn.addEventListener('click', () => {
-          const currentTheme = body.getAttribute('data-theme');
-          const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-          gsap.to('.auth-card', {
-            opacity: 0.1,
-            scale: 0.98,
-            duration: 0.15,
-            onComplete: () => {
-              body.setAttribute('data-theme', newTheme);
-              localStorage.setItem('theme', newTheme);
-              updateToggleButtonIcon(newTheme);
-
-              gsap.to('.auth-card', {
-                opacity: 1,
-                scale: 1,
-                duration: 0.25,
-                ease: 'power2.out'
-              });
-            }
-          });
-        });
-      }
-
-      function updateToggleButtonIcon(theme) {
-        toggleBtn.innerHTML = theme === 'dark' ? '☀️' : '🌙';
-      }
-    });
-  </script>
+<body>
+  <main class="l-auth">
+    <%- include(locals.page, locals) %>
+  </main>
+  <%- include('frontend/components/toast/ui') %>
+  <script type="module" src="/scripts/auth-entry.js"></script>
 </body>
 </html>

@@ -1,48 +1,68 @@
-import { describe, it, expect, vi } from 'vitest';
-import UIButtonComponent from './ui.js';
-import InMemoryEventBus from '../../scripts/event-bus/in-memory.js';
+/**
+ * Pruebas del componente Button (EJS + SCSS).
+ * Verifica renderizado de variantes (primary, secondary, danger),
+ * estados (loading, disabled) y emisión de estilos BEM.
+ *
+ * @module ButtonSpec
+ */
+import { describe, it, expect } from 'vitest';
+import ejs from 'ejs';
+import * as sass from 'sass';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 
-describe('UIButtonComponent Lifecycle Tests', () => {
-  it('should trigger events on click after mount', () => {
-    // Mocking DOM elements
-    const element = {
-      id: 'test-btn',
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn()
-    };
-    const bus = new InMemoryEventBus();
-    const onClickMock = vi.fn();
+// Componente SSR sin `ui.js` — el test valida render EJS + SCSS compilado (no clase JS).
+const here = dirname(fileURLToPath(import.meta.url));
+const FRONTEND = join(here, '../..'); // src/frontend/
 
-    const btn = new UIButtonComponent(element, bus, { onClick: onClickMock });
-    btn.mount();
-
-    expect(element.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
-
-    // Simulate click event manually
-    const clickHandler = element.addEventListener.mock.calls[0][1];
-    const eventMock = { target: element };
-    
-    const busListener = vi.fn();
-    bus.on('ui:button:click', busListener);
-
-    clickHandler(eventMock);
-
-    expect(onClickMock).toHaveBeenCalledWith(eventMock);
-    expect(busListener).toHaveBeenCalledWith({ id: 'test-btn', element, event: eventMock });
+describe('button', () => {
+  it('render: variante + label + data-action/target + estado inicial', async () => {
+    const html = await ejs.renderFile(join(here, 'ui.ejs'), {
+      variant: 'success',
+      label: 'Guardar',
+      action: 'form:submit',
+      target: 'create',
+    });
+    expect(html).toContain('c-button--success');
+    expect(html).toContain('Guardar');
+    expect(html).toContain('data-action="form:submit"');
+    expect(html).toContain('data-target="create"');
+    expect(html).toContain('data-state="idle"');
   });
 
-  it('should clean up listeners on destroy', () => {
-    const element = {
-      id: 'test-btn',
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn()
-    };
-    const bus = new InMemoryEventBus();
+  it('render: escapa el label (XSS)', async () => {
+    const html = await ejs.renderFile(join(here, 'ui.ejs'), { label: '<img onerror=x>' });
+    expect(html).not.toContain('<img onerror=x>');
+    expect(html).toContain('&lt;img');
+  });
 
-    const btn = new UIButtonComponent(element, bus);
-    btn.mount();
-    btn.destroy();
+  it('scss: theme.subscribe emite .c-button con tokens (no literales)', () => {
+    const { css } = sass.compile(join(FRONTEND, 'styles/dashboard.scss'));
+    expect(css).toContain('.c-button');
+    expect(css).toContain('var(--color-primary-600)');
+    expect(css).toContain('var(--color-on-primary)');
+  });
 
-    expect(element.removeEventListener).toHaveBeenCalledWith('click', expect.any(Function));
+  it('variant: fab renderiza como <button> con clase c-button--fab + aria-label + data-action (reemplaza al ex-support-fab)', async () => {
+    // Sin `icon` porque este test corre standalone (sin el `includer` de Fastify que resuelve
+    // rutas ROOT-RELATIVE). El icon+FAB juntos se cubren en el flujo real vía dashboard-view.functional.
+    const html = await ejs.renderFile(join(here, 'ui.ejs'), {
+      variant: 'fab',
+      action: 'modal:open',
+      target: 'support-fab-modal',
+      ariaLabel: 'Contactar al soporte',
+    });
+    expect(html).toContain('c-button--fab');
+    expect(html).toContain('aria-label="Contactar al soporte"');
+    expect(html).toContain('data-action="modal:open"');
+    expect(html).toContain('data-target="support-fab-modal"');
+  });
+
+  it('scss: variante fab emite position:fixed + border-radius:full + shadow desde tokens', () => {
+    const { css } = sass.compile(join(FRONTEND, 'styles/dashboard.scss'));
+    expect(css).toContain('.c-button--fab');
+    expect(css).toContain('position: fixed');
+    expect(css).toContain('var(--radius-full)');
+    expect(css).toContain('var(--shadow-lg)');
   });
 });

@@ -1,0 +1,45 @@
+@use 'sass:meta';
+
+@mixin styles {
+  .c-copy-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+    position: relative;
+
+    &__icon-copy,
+    &__icon-check {
+      display: flex;
+      align-items: center;
+      transition: transform var(--duration-fast) var(--easing-standard),
+                  opacity var(--duration-fast) var(--easing-standard);
+    }
+
+    &__icon-check {
+      position: absolute;
+      opacity: 0;
+      transform: scale(0.5);
+      color: var(--color-success-600);
+    }
+
+    &[data-state="copied"] {
+      color: var(--color-success-600);
+
+      .c-copy-button__icon-copy {
+        opacity: 0;
+        transform: scale(0.5);
+      }
+
+      .c-copy-button__icon-check {
+        position: relative;
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

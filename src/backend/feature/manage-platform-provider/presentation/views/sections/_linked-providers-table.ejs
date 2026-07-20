@@ -1,0 +1,25 @@
+<%
+  const linked = locals.linked || [];
+%>
+<% if (linked.length) { %>
+  <%- include('frontend/components/card/ui', {
+    title: 'Proveedores linkeados',
+    body: include('frontend/components/data-table/ui', {
+      columns: [
+        { key: 'category', label: 'Categoría' },
+        { key: 'provider', label: 'Proveedor' },
+        { key: 'enabled', label: 'Estado', align: 'right' },
+      ],
+      rows: linked.map((p) => ({
+        category: p.category,
+        provider: p.provider,
+        enabled: include('frontend/components/badge/ui', {
+          variant: p.enabled ? 'success' : 'neutral',
+          label: p.enabled ? 'Habilitado' : 'Deshabilitado',
+        }),
+      })),
+      emptyState: null,
+    }),
+    padding: 'md',
+  }) %>
+<% } %>

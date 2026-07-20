@@ -1,0 +1,55 @@
+<%
+  const derivedAuth = locals.derivedAuth || { enabled: false, strategies: [] };
+  const t = locals.activeTenant || {};
+  const linked = locals.linked || [];
+  const linkedMailProvider = linked.find((p) => p.category === 'mail' && p.enabled);
+  const hasMailProvider = !!linkedMailProvider;
+  const isEmailEnabled = hasMailProvider && (linkedMailProvider.settings?.toggles?.userAuth !== false);
+
+  const tenantDomain = `${t.subdomain}.localhost:3000`;
+  const redirectRows = derivedAuth.strategies.map((sName) => sName === 'local'
+    ? `<li><code>local</code>: <code>https://${tenantDomain}/login</code> → <code>https://${tenantDomain}/</code></li>`
+    : `<li><code>${sName}</code>: <code>https://${tenantDomain}/${sName}/login</code> → <code>https://${tenantDomain}/auth/callback</code></li>`
+  ).join('');
+
+  const checkboxHtml = include('frontend/components/checkbox/ui', {
+    name: 'settings.toggles.userAuth',
+    label: 'Enviar correos de autenticación a los usuarios finales',
+    checked: isEmailEnabled,
+    disabled: !hasMailProvider,
+    id: 'toggle-auth-emails'
+  });
+
+  const formHtml = hasMailProvider ? `
+    <form class="c-form u-mt-md" method="post" action="/api-system/v1/tenants/${t.id}/providers/mail/${linkedMailProvider.provider}/settings" data-method="put" data-redirect="/dashboard/backends/${t.id}?step=provider" data-autosubmit>
+      <input type="hidden" name="settings.toggles.userAuth" value="false" />
+      <input type="hidden" name="settings.toggles.userSupport" value="${linkedMailProvider.settings?.toggles?.userSupport !== false ? 'true' : 'false'}" />
+      ${checkboxHtml}
+    </form>
+  ` : `
+    <div class="u-mt-md u-opacity-50">
+      ${checkboxHtml}
+      <span class="u-text-xs u-text-muted u-block u-mt-2xs">Requiere linkear un proveedor de correo arriba para activarse.</span>
+    </div>
+  `;
+%>
+
+<%- include('frontend/components/card/ui', {
+  title: 'Auth de Users (derivada)',
+  body: `
+    <p class="u-text-sm u-mb-sm">
+      Estado: ${include('frontend/components/badge/ui', {
+        variant: derivedAuth.enabled ? 'success' : 'neutral',
+        label: derivedAuth.enabled ? 'Habilitada' : 'Deshabilitada',
+      })}
+      ${derivedAuth.enabled ? `— estrategias: ${derivedAuth.strategies.map((x) => `<code>${x}</code>`).join(', ')}` : '— linkea al menos un proveedor de auth para habilitarla.'}
+    </p>
+    ${derivedAuth.enabled ? `
+      <span class="u-text-xs u-text-muted u-block u-mb-xs">Redirecciones por convención (fijas, no editables):</span>
+      <ul class="nocode-list">${redirectRows}</ul>
+    ` : ''}
+
+    ${formHtml}
+  `,
+  padding: 'md',
+}) %>

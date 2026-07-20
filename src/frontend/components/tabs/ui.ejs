@@ -1,0 +1,21 @@
+<%
+  const items = locals.items || [];
+  const customClass = locals.class || '';
+%>
+<nav class="c-tabs <%= customClass %>" role="tablist">
+  <div class="c-tabs__list">
+    <% items.forEach(it => { %>
+      <button
+        type="button"
+        class="c-tabs__tab <%= it.active ? 'c-tabs__tab--active' : '' %>"
+        role="tab"
+        id="tab-<%= it.id %>"
+        aria-selected="<%= it.active ? 'true' : 'false' %>"
+        aria-controls="panel-<%= it.id %>"
+        data-target-panel="<%= it.id %>"
+      >
+        <%= it.label %>
+      </button>
+    <% }) %>
+  </div>
+</nav>

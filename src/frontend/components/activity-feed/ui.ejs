@@ -1,0 +1,23 @@
+<%
+  const items = locals.items || [];
+%>
+<div class="c-activity-feed">
+  <div class="c-activity-feed__list">
+    <% items.forEach(item => { %>
+      <div class="c-activity-feed__item" data-status="<%= item.status || 'info' %>">
+        <div class="c-activity-feed__marker" aria-hidden="true"></div>
+        <div class="c-activity-feed__content">
+          <div class="c-activity-feed__header">
+            <span class="c-activity-feed__title"><%= item.title %></span>
+            <% if (item.timestamp) { %>
+              <time class="c-activity-feed__time"><%= item.timestamp %></time>
+            <% } %>
+          </div>
+          <% if (item.description) { %>
+            <p class="c-activity-feed__description"><%= item.description %></p>
+          <% } %>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</div>

@@ -1,0 +1,17 @@
+<%
+  // Página delgada (views.md §2, §7): frame + sección. Sin `action` — el operador aprovisiona
+  // el tenant en /dashboard/tenants y luego elige uno acá para componer su backend No-Code.
+  const tenantsList = locals.tenants || [];
+%>
+<div class="u-flex u-flex-col u-gap-md">
+  <%- include('backend/common/views/sections/_dashboard-page-frame', {
+    breadcrumb: [
+      { label: 'Inicio', href: '/dashboard' },
+      { label: 'Backends' },
+    ],
+    title: 'Backends No-Code',
+    subtitle: 'Elige un tenant aprovisionado para componer o revisar su backend dinámico.',
+    currentPath: locals.currentPath,
+  }) %>
+  <%- include('backend/feature/manage-platform-backend/presentation/views/sections/_list-backends', { tenants: tenantsList }) %>
+</div>

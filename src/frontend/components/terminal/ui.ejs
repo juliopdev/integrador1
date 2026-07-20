@@ -1,0 +1,55 @@
+<%
+  // Terminal / consola de logs. Dos modos:
+  //  1. **Estático**: recibe `lines` (array de strings) → renderiza en SSR sin JS.
+  //  2. **Live (SSE)**: recibe `sseSrc` (URL) → el JS abre `EventSource` y agrega logs en vivo.
+  //     El server envía JSON `{id, level, message, createdAt}` por evento; el widget colorea
+  //     por nivel (`error`/`warn`/`info`) y prefija `[HH:MM:SS]`.
+  //
+  // `lines` y `sseSrc` no son mutuamente excluyentes: `lines` puebla el histórico inicial, `sseSrc`
+  // agrega los nuevos.
+  const title = locals.title || 'Consola de logs';
+  const lines = locals.lines || [];
+  const sseSrc = locals.sseSrc || null;
+  const maxLines = locals.maxLines || 200;
+  const id = locals.id || 'console';
+%>
+<div
+  class="c-terminal"
+  id="terminal-<%= id %>"
+  <% if (sseSrc) { %>data-sse-src="<%= sseSrc %>"<% } %>
+  data-max-lines="<%= maxLines %>"
+>
+  <div class="c-terminal__header">
+    <div class="c-terminal__buttons" aria-hidden="true">
+      <span class="c-terminal__btn c-terminal__btn--close"></span>
+      <span class="c-terminal__btn c-terminal__btn--minimize"></span>
+      <span class="c-terminal__btn c-terminal__btn--maximize"></span>
+    </div>
+    <span class="c-terminal__title"><%= title %></span>
+    <% if (sseSrc) { %>
+      <%# Botón "pausar auto-scroll": el operador puede leer sin que el stream le mueva la vista. %>
+      <button type="button" class="c-terminal__pause" data-action="terminal:toggle-autoscroll" aria-pressed="false" title="Pausar auto-scroll">
+        <span class="c-terminal__pause-label">Pausar</span>
+      </button>
+    <% } %>
+  </div>
+  <%# role="log" + aria-live="polite" hacen que un lector de pantalla anuncie líneas nuevas
+      sin interrumpir. Fundamental para operadores con lectores; sin esto el stream es mudo. %>
+  <div class="c-terminal__body" tabindex="0" role="log" aria-live="polite" aria-relevant="additions">
+    <div class="c-terminal__output">
+      <% lines.forEach(line => { %>
+        <div class="c-terminal__line"><%= line %></div>
+      <% }) %>
+    </div>
+  </div>
+  <div class="c-terminal__footer">
+    <%# Indicador de estado real (reemplaza el prompt cosmético "type a command…" que era
+        mentiroso: el componente no acepta input). Los tres estados posibles los pinta el JS. %>
+    <span class="c-terminal__status c-terminal__status--<%= sseSrc ? 'connecting' : 'static' %>" role="status" aria-live="polite">
+      <span class="c-terminal__status-dot" aria-hidden="true"></span>
+      <span class="c-terminal__status-label">
+        <%= sseSrc ? 'Conectando…' : 'Snapshot estático' %>
+      </span>
+    </span>
+  </div>
+</div>

@@ -1,0 +1,41 @@
+<%
+  const tenant = locals.tenant || {};
+  const escHtml = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+%>
+<%- include('frontend/components/modal/ui', {
+  id: 'env-vars-info-modal',
+  title: 'Información de Seguridad: Variables de Entorno',
+  body: `
+    <div class="c-alert c-alert--warning" role="alert" style="margin-bottom: var(--space-4);">
+      <strong class="c-alert__title">Todo lo que pongas acá es PÚBLICO</strong>
+      <span class="c-alert__message">Estas variables se inyectan en el navegador del cliente (window.env) y las ve cualquier persona que use la web. NUNCA guardes secretos (Stripe secret keys, passwords de base de datos, API tokens privados).</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4);">
+      <div style="border-left: 3px solid var(--color-success); padding-left: var(--space-2); display: flex; flex-direction: column; gap: var(--space-1);">
+        <strong class="u-text-xs u-text-success">✅ SÍ va acá</strong>
+        <ul class="u-text-xs u-m-0" style="padding-left: 1.1em; line-height: 1.7; margin-top: var(--space-1);">
+          <li><code>API_URL</code>, <code>APP_NAME</code></li>
+          <li><code>GA_MEASUREMENT_ID</code></li>
+          <li><code>SENTRY_DSN</code></li>
+          <li><code>STRIPE_PUBLISHABLE_KEY</code></li>
+        </ul>
+      </div>
+      <div style="border-left: 3px solid var(--color-error); padding-left: var(--space-2); display: flex; flex-direction: column; gap: var(--space-1);">
+        <strong class="u-text-xs u-text-danger">❌ NUNCA acá</strong>
+        <ul class="u-text-xs u-m-0" style="padding-left: 1.1em; line-height: 1.7; margin-top: var(--space-1);">
+          <li><code>STRIPE_SECRET_KEY</code></li>
+          <li><code>DATABASE_URL</code> con password</li>
+          <li>Cualquier <code>*_SECRET</code> o <code>*_TOKEN</code></li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <p class="u-text-sm u-m-0 u-mb-sm">
+        <strong>¿Cómo usar secretos de forma segura? (Patrón BFF)</strong>
+      </p>
+      <p class="u-text-xs u-text-muted" style="line-height: 1.5; margin: 0;">
+        El frontend del cliente habla con el backend del tenant en la plataforma, y es el backend (código Node.js del lado del servidor) quien realiza la petición al microservicio sensible usando la credencial oculta (la cual guardas de forma cifrada en Proveedores del backend). El secret nunca sale al navegador.
+      </p>
+    </div>
+  `
+}) %>

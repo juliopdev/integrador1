@@ -1,0 +1,14 @@
+@use 'light-mode' as light;
+@use 'dark-mode' as dark;
+@use 'measures' as measures;
+@use 'typefaces' as typefaces;
+@use 'animations' as animations;
+
+$theme: (
+  'theme-name': ('minimalist'),
+  'light-mode': light.$light-mode,
+  'dark-mode': dark.$dark-mode,
+  'measures': measures.$measures,
+  'typefaces': typefaces.$typefaces,
+  'animations': animations.$animations,
+);

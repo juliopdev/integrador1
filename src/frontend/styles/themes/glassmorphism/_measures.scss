@@ -1,0 +1,17 @@
+// Tema glassmorphism — medidas.
+// Define radios de borde más grandes y suaves, y sombras difusas con glows ligeros.
+
+$measures: (
+  // Radios de borde más curvos para un aspecto premium
+  'radius-sm': 6px,
+  'radius-md': 12px,
+  'radius-lg': 24px,
+
+  // Sombras suaves y amplias con un toque de tono azulado (glow sutil)
+  'shadow-sm': 0 2px 8px rgba(0, 0, 0, 0.05),
+  'shadow-md': 0 8px 32px 0 rgba(31, 38, 135, 0.08),
+  'shadow-lg': 0 8px 32px 0 rgba(31, 38, 135, 0.15),
+
+  // Filtro de fondo genérico y semántico para el difuminado del cristal
+  'backdrop-filter': blur(16px),
+);

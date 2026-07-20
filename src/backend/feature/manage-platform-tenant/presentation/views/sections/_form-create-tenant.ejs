@@ -1,0 +1,63 @@
+<%
+  // Formulario de creación/aprovisionamiento de tenant.
+  const plans = locals.plans || [];
+  const tenantHostSuffix = locals.tenantHostSuffix || 'localhost:3000';
+  const planOptions = plans.map((p) => {
+    const feats = (() => { try { return JSON.parse(p.featuresJson); } catch { return {}; } })();
+    const hint = [
+      feats.maintenanceMonths != null ? `${feats.maintenanceMonths}m mant.` : null,
+      feats.deployMonths != null ? `${feats.deployMonths}m deploy` : 'deploy permanente',
+    ].filter(Boolean).join(' · ');
+    return {
+      value: p.id,
+      label: `${p.label}${hint ? ` — ${hint}` : ''}`
+    };
+  });
+
+  const formHtml = include('frontend/components/form/ui', {
+    method: 'post',
+    action: '/api-system/v1/tenants',
+    redirect: '/dashboard/tenants',
+    body: `
+      ${include('frontend/components/input/ui', {
+        name: 'projectName',
+        label: 'Nombre del proyecto',
+        placeholder: 'Mi Tienda Online',
+        required: true
+      })}
+      ${include('frontend/components/input/ui', {
+        name: 'subdomain',
+        label: 'Subdominio',
+        placeholder: 'tienda-ejemplo',
+        suffix: `.${tenantHostSuffix}`,
+        required: true
+      })}
+      ${include('frontend/components/input/ui', {
+        name: 'masterEmail',
+        type: 'email',
+        label: 'Correo del Administrador (Master)',
+        placeholder: 'master@correo.com',
+        required: true
+      })}
+      ${include('frontend/components/select/ui', {
+        name: 'planId',
+        label: 'Plan (contrato referencial)',
+        options: planOptions,
+        required: true
+      })}
+      ${include('frontend/components/button/ui', {
+        type: 'submit',
+        variant: 'primary',
+        label: 'Crear Tenant e Iniciar Aprovisionamiento',
+        loadingLabel: 'Aprovisionando tenant…',
+        disabled: true,
+        class: 'u-w-full'
+      })}
+    `
+  });
+%>
+
+<%- include('frontend/components/card/ui', {
+  body: formHtml,
+  padding: 'lg'
+}) %>

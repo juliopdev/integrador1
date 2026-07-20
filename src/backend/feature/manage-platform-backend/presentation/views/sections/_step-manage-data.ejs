@@ -1,0 +1,230 @@
+<%
+  // Paso 5 v2 (`_step-manage-data`, PLAN-ux2 P7): diseñador de columnas por resource — SOLO
+  // definición (la población de datos es de cada Master en su tenant, feature tenant-data).
+  // Los resources se crean en el paso anterior (Resources & endpoints); aquí se les da forma.
+  //
+  // Iter UX P3.1 + P3.4: el form para añadir campo migró de slide-over lateral a modal centrado.
+  // Motivos:
+  //  - Consistencia visual: era la única pantalla con slide-over; el resto (settings, confirm,
+  //    api key, invite staff) usa modal. Un solo patrón para "acción secundaria con formulario".
+  //  - Alineación con plataformas de referencia (Neon, Supabase): "Add column" siempre es modal.
+  //  - La tabla se enriqueció con "Default" y "Único" — dos columnas nuevas al estilo Neon.
+  const t = locals.activeTenant || {};
+  const state = locals.wizardState || {};
+  const draft = state.draftContract;
+  const draftResources = draft?.schema?.resources || [];
+  const fieldTypes = locals.fieldTypes || [];
+
+  const authProviders = (state.linkedProviders || []).filter((p) => p.category === 'auth' && p.enabled);
+  const hasAuth = draft?.schema?.auth?.userAuthEnabled || authProviders.length > 0;
+  const allTargetResources = [...draftResources];
+  if (hasAuth && !allTargetResources.some(res => res.name === 'users')) {
+    allTargetResources.unshift({ name: 'users', physicalName: 'users_db' });
+  }
+
+  // Etiqueta técnica en inglés para el select de tipos.
+  const TYPE_LABELS = {
+    string: 'VARCHAR (string)',
+    text: 'TEXT',
+    integer: 'INTEGER',
+    float: 'DECIMAL/FLOAT',
+    boolean: 'BOOLEAN',
+    date: 'DATE',
+    datetime: 'TIMESTAMP/DATETIME',
+    json: 'JSONB',
+    asset: 'ASSET (file)',
+    relation: 'FOREIGN KEY (relation)',
+  };
+  // El "Default" y "Único" no aplican a asset/relation (ver contract.schema.js §superRefine).
+  // El form no los bloquea con JS por simplicidad; el Zod del backend rechaza si se cuelan.
+%>
+
+<div class="u-flex u-flex-col u-gap-md">
+  <% if (!draft || draftResources.length === 0) { %>
+    <%- include('frontend/components/card/ui', {
+      title: 'Sin resources que diseñar',
+      body: `<p class="u-text-muted u-text-sm u-m-0">
+        Crea al menos un resource en el paso <strong>Resources & endpoints</strong> (Retroceder)
+        y vuelve aquí para definir sus columnas.
+      </p>`,
+      padding: 'md',
+    }) %>
+  <% } %>
+
+  <% draftResources.forEach((r) => { %>
+    <%
+      const fields = r.fields || [];
+      const modalId = `add-field-modal-${r.name}`;
+
+      const headerActions = include('frontend/components/button/ui', {
+        label: '+ Añadir campo',
+        variant: 'primary',
+        size: 'sm',
+        action: 'modal:open',
+        target: modalId,
+      });
+
+      // Formatea el default para la celda: comillas para strings, tal cual para números/bool.
+      // Si no hay default → guión atenuado.
+      const formatDefault = (f) => {
+        if (f.defaultValue === undefined || f.defaultValue === null || f.defaultValue === '') {
+          return '<span class="u-text-muted">—</span>';
+        }
+        const val = String(f.defaultValue);
+        if (f.type === 'string' || f.type === 'text' || f.type === 'date' || f.type === 'datetime') {
+          return `<code class="u-text-xs">"${val.replace(/"/g, '&quot;')}"</code>`;
+        }
+        return `<code class="u-text-xs">${val.replace(/</g, '&lt;')}</code>`;
+      };
+    %>
+    <%- include('frontend/components/card/ui', {
+      titleHtml: `<code>${r.name}</code> <span class="u-text-muted u-text-xs u-font-normal">· ${r.physicalName} · ${r.store}</span>`,
+      headerActions,
+      body: `
+        <div class="data-grid data-grid--wide">
+          <div class="l-data-grid__row l-data-grid__row--header">
+            <div>Column</div>
+            <div>Data Type</div>
+            <div>Default</div>
+            <div>NOT NULL</div>
+            <div>UNIQUE</div>
+            <div></div>
+          </div>
+          ${fields.length === 0
+            ? `<div class="l-data-grid__row"><div style="grid-column: 1 / -1; padding: var(--space-3); text-align: center;"><span class="u-text-muted u-text-sm">No columns added yet. Use "+ Add column" to start.</span></div></div>`
+            : fields.map((f) => `
+              <div class="l-data-grid__row">
+                <div>
+                  <code class="u-text-sm u-text-strong">${f.name}</code>
+                  ${f.description ? `<div class="u-text-xs u-text-muted u-mt-xs">${f.description.replace(/</g, '&lt;')}</div>` : ''}
+                </div>
+                <div><span class="type-badge type-badge--${f.type}">${f.type}</span></div>
+                <div>${formatDefault(f)}</div>
+                <div>${f.required ? include('frontend/components/badge/ui', { variant: 'success', label: 'TRUE' }) : '<span class="u-text-muted">—</span>'}</div>
+                <div>${f.unique ? include('frontend/components/badge/ui', { variant: 'info', label: 'TRUE' }) : '<span class="u-text-muted">—</span>'}</div>
+                <div class="u-text-right">
+                  <form class="c-form l-nocode-cell-form" method="post" action="/api-system/v1/tenants/${t.id}/backend/draft/resources/${r.name}/fields/${f.id}" data-method="delete" data-redirect="/dashboard/backends/${t.id}?step=data">
+                    ${include('frontend/components/button/ui', { type: 'submit', variant: 'ghost', size: 'sm', label: '', icon: 'trash', ariaLabel: 'Eliminar' })}
+                  </form>
+                </div>
+              </div>
+            `).join('')
+          }
+        </div>
+        <p class="u-text-muted u-text-xs u-m-0 u-mt-xs">
+          * The columns <code>id</code>, <code>created_at</code>, <code>updated_at</code> and <code>deleted_at</code> are automatically injected by the system.
+        </p>
+      `,
+      padding: 'md',
+    }) %>
+
+    <%# Modal centrado con el form. El body se pobla y abre por bus (`modal:open`). Reusa el
+        componente modal estándar de la app (mismo look que settings, confirm-typing, etc). %>
+    <%
+      const formBody = `
+        <form class="c-form u-flex u-flex-col u-gap-md" method="post" action="/api-system/v1/tenants/${t.id}/backend/draft/resources/${r.name}/fields" data-redirect="/dashboard/backends/${t.id}?step=data">
+          ${include('frontend/components/input/ui', {
+            name: 'name',
+            label: 'Column Name (snake_case)',
+            placeholder: 'ej: title, price, is_active',
+            required: true,
+          })}
+          ${include('frontend/components/select/ui', {
+            id: `select-type-${r.name}`,
+            name: 'type',
+            label: 'Data Type',
+            options: fieldTypes.map((ft) => ({ value: ft, label: TYPE_LABELS[ft] || ft })),
+            required: true,
+          })}
+          
+          <div id="target-wrapper-${r.name}" style="display: none;">
+            ${include('frontend/components/select/ui', {
+              id: `select-target-${r.name}`,
+              name: 'target',
+              label: 'Target Resource',
+              options: allTargetResources.map((res) => ({ value: res.name, label: res.name })),
+              placeholder: 'Select target resource...',
+              required: false,
+            })}
+          </div>
+
+          <div id="length-wrapper-${r.name}" style="display: none;">
+            ${include('frontend/components/input/ui', {
+              id: `input-length-${r.name}`,
+              name: 'length',
+              label: 'Max Length (optional)',
+              placeholder: 'Ej: 255',
+              required: false,
+            })}
+          </div>
+
+          <div id="check-wrapper-${r.name}" style="display: none;">
+            ${include('frontend/components/input/ui', {
+              id: `input-check-${r.name}`,
+              name: 'check',
+              label: 'CHECK Constraint Expression (optional)',
+              placeholder: 'Ej: price >= 0',
+              required: false,
+            })}
+          </div>
+
+          <div id="default-text-wrapper-${r.name}">
+            ${include('frontend/components/input/ui', {
+              id: `input-default-text-${r.name}`,
+              name: 'defaultValue',
+              label: 'Default Value (optional)',
+              placeholder: 'Ej: 0 · Sin categoría · now()',
+              required: false,
+            })}
+          </div>
+          <div id="default-bool-wrapper-${r.name}" style="display: none;">
+            ${include('frontend/components/select/ui', {
+              id: `select-default-bool-${r.name}`,
+              name: 'defaultValueBool',
+              label: 'Default Value (optional)',
+              options: [
+                { value: '', label: 'Select default...' },
+                { value: 'true', label: 'true' },
+                { value: 'false', label: 'false' }
+              ],
+              required: false,
+            })}
+          </div>
+          ${include('frontend/components/textarea/ui', {
+            name: 'description',
+            label: 'Description (optional)',
+            placeholder: 'Explicá qué guarda esta columna. Se muestra al Master como ayuda.',
+            rows: 2,
+            required: false,
+          })}
+          <div class="u-flex u-flex-col u-gap-sm">
+            ${include('frontend/components/checkbox/ui', {
+              name: 'required',
+              label: 'NOT NULL (Required)',
+              variant: 'switch',
+              id: `add-field-required-${r.name}`,
+            })}
+            ${include('frontend/components/checkbox/ui', {
+              name: 'unique',
+              label: 'UNIQUE (Unique index)',
+              variant: 'switch',
+              id: `add-field-unique-${r.name}`,
+            })}
+          </div>
+          ${include('frontend/components/button/ui', {
+            type: 'submit',
+            variant: 'primary',
+            label: 'Add Column',
+            class: 'u-w-full',
+          })}
+        </form>
+      `;
+    %>
+    <%- include('frontend/components/modal/ui', {
+      id: modalId,
+      title: `Add Column to Resource ${r.name}`,
+      size: 'md',
+      body: formBody,
+    }) %>
+  <% }); %>
+</div>

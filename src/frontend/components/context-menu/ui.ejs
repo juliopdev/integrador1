@@ -1,0 +1,26 @@
+<%
+  const id = locals.id || 'context-menu';
+  const items = locals.items || [];
+%>
+<div class="c-context-menu" id="<%= id %>" role="menu" data-open="false">
+  <ul class="c-context-menu__list">
+    <% items.forEach(it => { %>
+      <li class="c-context-menu__item-wrapper">
+        <button
+          type="button"
+          class="c-context-menu__item <%= it.destructive ? 'c-context-menu__item--destructive' : '' %>"
+          role="menuitem"
+          <% if (it.disabled) { %>disabled<% } %>
+          data-action="<%= it.action %>"
+        >
+          <% if (it.icon) { %>
+            <span class="c-context-menu__icon" aria-hidden="true">
+              <%- include('frontend/components/icon/ui', { name: it.icon, size: 'sm' }) %>
+            </span>
+          <% } %>
+          <span class="c-context-menu__label"><%= it.label %></span>
+        </button>
+      </li>
+    <% }) %>
+  </ul>
+</div>

@@ -1,0 +1,38 @@
+<%
+  // Página de chat del inquilino: reutiliza el componente de chat oficial del sistema.
+%>
+<div class="u-flex u-flex-col u-gap-md u-h-full">
+  <%- include('frontend/components/breadcrumbs/ui', {
+    currentPath: locals.currentPath,
+    items: [
+      { label: 'Dashboard', href: '/dashboard' },
+      { label: 'Mensajes' },
+    ],
+  }) %>
+
+  <%- include('frontend/components/page-header/ui', {
+    title: 'Atención a clientes',
+    subtitle: 'Chat interactivo en tiempo real para responder las consultas de tus usuarios.',
+  }) %>
+
+  <div class="l-chat-layout" data-tenant-id="<%= locals.tenant.id %>">
+    <%- include('frontend/components/chat-box/ui', {
+      title: 'Mensajes de clientes',
+      messages: []
+    }) %>
+  </div>
+</div>
+
+<style>
+.l-chat-layout {
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  height: 600px;
+}
+.l-chat-layout .c-chat-box {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+</style>

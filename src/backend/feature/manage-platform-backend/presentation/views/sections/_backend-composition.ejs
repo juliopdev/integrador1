@@ -1,0 +1,101 @@
+<%
+  // Sección: composición del contrato — resources con sus fields + endpoints por resource. Es la
+  // vista más densa; para MVP usa 2 sub-tablas por card. La lectura de resources del contrato
+  // ya la hace el use case, aquí solo pintamos.
+  const d = locals.detail;
+  const resources = d.schema?.resources || [];
+  const endpoints = d.schema?.endpoints || [];
+  const endpointsByResource = new Map();
+  for (const ep of endpoints) {
+    if (!endpointsByResource.has(ep.resource)) endpointsByResource.set(ep.resource, []);
+    endpointsByResource.get(ep.resource).push(ep);
+  }
+%>
+<div class="u-flex u-flex-col u-gap-md">
+  <% if (resources.length === 0) { %>
+    <%- include('frontend/components/card/ui', {
+      title: 'Sin resources',
+      body: `
+        <p class="u-text-muted u-text-sm u-m-0">
+          El contrato no define ningún resource. Un contrato sin resources solo publica auth/WS pero
+          no expone CRUD.
+        </p>
+      `,
+      padding: 'md',
+    }) %>
+  <% } else { %>
+    <% resources.forEach((r) => { %>
+      <%
+        const eps = endpointsByResource.get(r.name) || [];
+        const fields = r.fields || [];
+
+        const formatDefault = (f) => {
+          if (f.defaultValue === undefined || f.defaultValue === null || f.defaultValue === '') {
+            return '<span class="u-text-muted">—</span>';
+          }
+          const val = String(f.defaultValue);
+          if (f.type === 'string' || f.type === 'text' || f.type === 'date' || f.type === 'datetime') {
+            return `<code class="u-text-xs">"${val.replace(/"/g, '&quot;')}"</code>`;
+          }
+          return `<code class="u-text-xs">${val.replace(/</g, '&lt;')}</code>`;
+        };
+
+        const fieldsTable = fields.length ? include('frontend/components/data-table/ui', {
+          columns: [
+            { key: 'name', label: 'Campo' },
+            { key: 'type', label: 'Tipo' },
+            { key: 'default', label: 'Default' },
+            { key: 'required', label: 'Requerido' },
+            { key: 'unique', label: 'Único', align: 'right' },
+          ],
+          rows: fields.map((f) => ({
+            name: `
+              <code class="u-text-sm u-text-strong">${f.name}</code>
+              ${f.description ? `<div class="u-text-xs u-text-muted u-mt-xs">${f.description.replace(/</g, '&lt;')}</div>` : ''}
+              ${f.type === 'relation' && f.target ? `<div class="u-text-xs u-text-muted u-mt-xs">↳ Relación: <code>${f.target}</code></div>` : ''}
+              ${f.type === 'asset' && f.provider ? `<div class="u-text-xs u-text-muted u-mt-xs">↳ Proveedor: <code>${f.provider}</code></div>` : ''}
+            `,
+            type: include('frontend/components/badge/ui', { variant: 'neutral', label: f.type }),
+            default: formatDefault(f),
+            required: f.required
+              ? include('frontend/components/badge/ui', { variant: 'success', label: 'Sí' })
+              : `<span class="u-text-muted">No</span>`,
+            unique: f.unique
+              ? include('frontend/components/badge/ui', { variant: 'info', label: 'Sí' })
+              : `<span class="u-text-muted">No</span>`,
+          })),
+          emptyState: null,
+        }) : '<p class="u-text-muted u-text-sm u-m-0">Sin campos.</p>';
+
+        // P8: cada método muestra su audiencia (access de P6b). Sin entrada = público (v1).
+        const methodBadge = (e, m) => {
+          const audiences = e.access?.[m];
+          if (!audiences) return include('frontend/components/badge/ui', { variant: 'neutral', label: `${m} · público` });
+          const label = `${m} · ${audiences.join(', ')}`;
+          const variant = audiences.includes('user') ? 'info' : 'warning';
+          return include('frontend/components/badge/ui', { variant, label });
+        };
+        const endpointsHtml = eps.length
+          ? eps.map((e) => `
+              <div class="endpoint-line">
+                <code class="u-text-xs u-text-strong">/api/${d.version}${e.path}</code>
+                <span class="l-endpoint-line__methods">${e.methods.map((m) => methodBadge(e, m)).join(' ')}</span>
+              </div>
+            `).join('')
+          : '<span class="u-text-muted u-text-xs">Sin endpoints públicos.</span>';
+      %>
+      <%- include('frontend/components/card/ui', {
+        titleHtml: `<code>${r.name}</code> <span class="u-text-muted u-text-xs u-font-normal">· ${r.physicalName} · ${r.store}</span>`,
+        headerActions: include('frontend/components/badge/ui', { variant: r.store === 'sql' ? 'success' : 'neutral', label: r.store === 'sql' ? 'Postgres' : 'Mongo' }),
+        body: `
+          ${fieldsTable}
+          <div class="u-mt-md">
+            <span class="u-text-muted u-text-xs u-block u-mb-xs">Endpoints</span>
+            ${endpointsHtml}
+          </div>
+        `,
+        padding: 'md',
+      }) %>
+    <% }); %>
+  <% } %>
+</div>

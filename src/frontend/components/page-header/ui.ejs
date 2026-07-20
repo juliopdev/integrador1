@@ -1,0 +1,30 @@
+<%
+  // page-header (Iter 37 · variant hero Iter 2026-07): encabezado genérico de página — título +
+  // subtítulo opcional + slot de acciones a la derecha. Reemplaza los `<h2 style="...">` inline
+  // repartidos por los features. Agnóstico de dominio (views.md §2).
+  //
+  //   title / titleHtml       texto plano (escapado) — o HTML de confianza (para <code>, etc.).
+  //   subtitle / subtitleHtml idem para el subtítulo (opcional).
+  //   actions                 HTML de confianza (botón/acciones a la derecha) — opcional.
+  //   variant                 'default' | 'hero'.
+  //     - default: `<h2>` (subheading de una página con h1 propio en el layout);
+  //     - hero:    `<h1>` con background + padding + border-radius (landing / home).
+  const title = locals.title || '';
+  const titleHtml = locals.titleHtml || null;
+  const subtitle = locals.subtitle || '';
+  const subtitleHtml = locals.subtitleHtml || null;
+  const actions = locals.actions || null;
+  const variant = locals.variant || 'default';
+  const Heading = variant === 'hero' ? 'h1' : 'h2';
+%>
+<header class="c-page-header<%= variant === 'hero' ? ' c-page-header--hero' : '' %>">
+  <div class="c-page-header__text">
+    <<%= Heading %> class="c-page-header__title"><% if (titleHtml) { %><%- titleHtml %><% } else { %><%= title %><% } %></<%= Heading %>>
+    <% if (subtitleHtml || subtitle) { %>
+      <p class="c-page-header__subtitle"><% if (subtitleHtml) { %><%- subtitleHtml %><% } else { %><%= subtitle %><% } %></p>
+    <% } %>
+  </div>
+  <% if (actions) { %>
+    <div class="c-page-header__actions"><%- actions %></div>
+  <% } %>
+</header>

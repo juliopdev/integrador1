@@ -1,49 +1,10 @@
-<div class="auth-page">
-  <div class="auth-card">
-    <!-- Botón de cambio de modo (Light/Dark) -->
-    <button type="button" class="theme-toggle-btn" id="theme-toggle" title="Cambiar Tema / Switch Theme">
-      ☀️
-    </button>
-
-    <div class="auth-card__header">
-      <% if (locals.tenant) { %>
-        <h1 class="auth-card__title">Acceso Inquilino</h1>
-        <p class="auth-card__subtitle">Ingresa al panel administrativo</p>
-        <div class="auth-card__badge"><%= tenant.name %></div>
-      <% } else { %>
-        <h1 class="auth-card__title">Acceso Plataforma</h1>
-        <p class="auth-card__subtitle">Ingresa al panel del Superadministrador</p>
-        <div class="auth-card__badge">Superadmin</div>
-      <% } %>
-    </div>
-
-    <% if (locals.error) { %>
-      <div class="auth-card__alert">
-        <%= error %>
-      </div>
-    <% } %>
-
-    <form class="auth-card__form" action="/dashboard/login" method="POST">
-      <div class="auth-card__group">
-        <label class="auth-card__label" for="email">Correo Electrónico</label>
-        <input class="auth-card__input" type="email" id="email" name="email" required placeholder="correo@ejemplo.com" />
-      </div>
-
-      <div class="auth-card__group">
-        <label class="auth-card__label" for="password">Contraseña</label>
-        <input class="auth-card__input" type="password" id="password" name="password" required placeholder="••••••••" />
-      </div>
-
-      <div class="auth-card__group">
-        <label class="auth-card__label" for="passphrase">Frase de Seguridad (Passphrase)</label>
-        <input class="auth-card__input" type="password" id="passphrase" name="passphrase" required placeholder="••••••••" />
-      </div>
-
-      <button type="submit" class="auth-card__button">Iniciar Sesión</button>
-    </form>
-
-    <% if (locals.tenant) { %>
-      <%- include('../sections/_tenant-hero-auth') %>
-    <% } %>
-  </div>
-</div>
+<%
+  const token = locals.token || null;
+%>
+<%- include('frontend/components/form/ui', {
+  class: 'l-auth-card',
+  method: 'post',
+  action: '/api-system/v1/login',
+  redirect: token ? '/dashboard/login?activated=1' : '/dashboard',
+  body: include('backend/feature/auth-admin/presentation/views/sections/_form-login-body', locals)
+}) %>

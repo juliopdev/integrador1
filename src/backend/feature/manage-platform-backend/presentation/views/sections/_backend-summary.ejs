@@ -1,0 +1,40 @@
+<%
+  // Sección: resumen del contrato (versión + estado + counts). Nombre por contenido (views.md).
+  const d = locals.detail;
+  const s = d.schema || {};
+  const statusVariant = d.status === 'published' ? 'success' : (d.status === 'retired' ? 'neutral' : 'warning');
+  const statusLabel = d.status === 'published' ? 'Publicado' : (d.status === 'retired' ? 'Retirado' : d.status);
+  const resourcesCount = (s.resources || []).length;
+  const endpointsCount = (s.endpoints || []).length;
+  const strategiesCount = (s.auth?.strategies || []).length;
+  const channelsCount = (s.websocket?.channels || []).length;
+
+  const body = `
+    <div class="backend-stats">
+      <div>
+        <span class="u-text-muted u-text-xs u-block">Resources</span>
+        <strong>${resourcesCount}</strong>
+      </div>
+      <div>
+        <span class="u-text-muted u-text-xs u-block">Endpoints</span>
+        <strong>${endpointsCount}</strong>
+      </div>
+      <div>
+        <span class="u-text-muted u-text-xs u-block">Auth users</span>
+        <strong>${s.auth?.userAuthEnabled ? 'Habilitada' : 'Deshabilitada'}</strong>
+        ${strategiesCount ? `<span class="u-text-muted u-text-xs"> · ${strategiesCount} estrategia(s)</span>` : ''}
+      </div>
+      <div>
+        <span class="u-text-muted u-text-xs u-block">WebSocket</span>
+        <strong>${channelsCount}</strong>
+        <span class="u-text-muted u-text-xs"> canal(es)</span>
+      </div>
+    </div>
+  `;
+%>
+<%- include('frontend/components/card/ui', {
+  title: 'Estado del contrato',
+  headerActions: include('frontend/components/badge/ui', { variant: statusVariant, label: statusLabel }),
+  body,
+  padding: 'md',
+}) %>

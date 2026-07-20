@@ -1,0 +1,54 @@
+// Tema default — modo CLARO. Fuente de verdad de los valores de color (y fallback de otros temas).
+// Solo VALORES; el sistema (allowlist, on-color, capas) vive en .doc/rules/scss.md.
+
+$light-mode: (
+  // Superficies
+  'color-bg': #f1f5f9,
+  'color-surface': #ffffff,
+  'color-surface-raised': #ffffff,
+  'color-surface-solid': #ffffff, // superficies flotantes (modal): siempre opaca, aunque el tema use cristal
+  'color-overlay': rgba(15, 23, 42, 0.45),
+  'color-scrim': rgba(15, 23, 42, 0.6),
+
+  // Texto
+  'color-text': #0f172a,
+  'color-text-muted': #64748b,
+  'color-text-inverse': #f8fafc,
+
+  // Bordes
+  'color-border': #e2e8f0,
+  'color-border-strong': #cbd5e1,
+
+  // Marca (escala)
+  'color-primary-50': #eff6ff,
+  'color-primary-100': #dbeafe,
+  'color-primary-500': #3b82f6,
+  'color-primary-600': #2563eb,
+  'color-primary-700': #1d4ed8,
+  'color-primary-bg': #2563eb,
+  'color-primary-bg-hover': #1d4ed8,
+
+  // On-colors (contraste sobre superficies sólidas/de acento — decisión del tema)
+  'color-on-primary': #ffffff,
+  'color-on-surface': #0f172a,
+  'color-on-inverse': #0f172a,
+
+  // Estados (solid + on)
+  'color-success': #16a34a,
+  'color-on-success': #ffffff,
+  'color-warning': #d97706,
+  'color-on-warning': #ffffff,
+  'color-error': #dc2626,
+  'color-on-error': #ffffff,
+  'color-info': #0891b2,
+  'color-on-info': #ffffff,
+
+  // Foco / skeleton
+  'color-focus-ring': rgba(37, 99, 235, 0.55),
+  'color-skeleton': #e2e8f0,
+
+  // Error / success backgrounds (semi-transparent, for focus rings and animations)
+  'color-error-bg': rgba(239, 68, 68, 0.2),
+  'color-success-bg': rgba(16, 185, 129, 0.7),
+  'color-success-pulse': rgba(16, 185, 129, 0),
+);

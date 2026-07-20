@@ -1,0 +1,201 @@
+@use 'sass:meta';
+
+@mixin styles {
+  .c-input {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1, 6px);
+
+    &__label {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    // Iter UX B4: en superficies Master/Staff (`data-scope="tenant"` en <html>), los labels
+    // pasan a sentence-case y grow un poco. Es el estilo humano/negocio; el uppercase técnico
+    // queda para el Superadmin.
+    [data-scope="tenant"] &__label {
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text);
+    }
+
+    &__wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      border-radius: var(--radius-md);
+
+      &--has-prefix {
+        .c-input__field {
+          border-top-left-radius: 0;
+          border-bottom-left-radius: 0;
+        }
+      }
+    }
+
+    &__prefix {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 var(--space-3);
+      height: var(--size-control);
+      background-color: var(--color-surface-raised);
+      border: var(--border-thin) solid var(--color-border-strong);
+      border-right: none;
+      border-top-left-radius: var(--radius-md);
+      border-bottom-left-radius: var(--radius-md);
+      color: var(--color-text-muted);
+      font-size: var(--font-size-sm);
+      flex-shrink: 0;
+    }
+
+    &__icon {
+      position: absolute;
+      left: var(--space-3);
+      color: var(--color-text-muted);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+
+    &__field {
+      width: 100%;
+      height: var(--size-control);
+      padding: 0 var(--space-3);
+      background-color: var(--color-surface-raised);
+      backdrop-filter: var(--backdrop-filter);
+      -webkit-backdrop-filter: var(--backdrop-filter);
+      color: var(--color-text);
+      border: var(--border-thin) solid var(--color-border-strong);
+      border-radius: var(--radius-md);
+      font-family: var(--font-sans);
+      font-size: var(--font-size-sm);
+      transition: border-color var(--duration-fast) var(--easing-standard),
+                  box-shadow var(--duration-fast) var(--easing-standard);
+
+      &::placeholder {
+        color: var(--color-text-muted);
+      }
+
+      &:focus-visible {
+        outline: none;
+        border-color: var(--color-primary-600);
+        box-shadow: 0 0 0 var(--border-thick) var(--color-focus-ring);
+      }
+
+      &--has-icon {
+        padding-left: 36px;
+      }
+
+      &--has-suffix {
+        padding-right: 140px;
+      }
+
+      &[type="password"] {
+        padding-right: 36px;
+      }
+    }
+
+    &__password-toggle {
+      position: absolute;
+      right: var(--space-3);
+      background: transparent;
+      border: none;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      padding: var(--space-1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      transition: color var(--duration-fast) var(--easing-standard);
+      z-index: 2;
+
+      &:hover {
+        color: var(--color-text);
+      }
+
+      &--visible {
+        color: var(--color-primary-600);
+      }
+    }
+
+    &__suffix {
+      position: absolute;
+      right: var(--space-4);
+      color: var(--color-text-muted);
+      font-size: var(--font-size-sm);
+      pointer-events: none;
+    }
+
+    &__error {
+      font-size: var(--font-size-xs);
+      color: var(--color-error);
+      min-height: var(--space-4);
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      margin-top: var(--space-1);
+
+      svg {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+      }
+    }
+
+    &[data-invalid='true'] {
+      .c-input__field {
+        border-color: var(--color-error);
+        &:focus-visible {
+          box-shadow: 0 0 0 var(--border-thick) var(--color-error-bg);
+        }
+      }
+    }
+
+    &[data-invalid='false'] {
+      .c-input__error {
+        visibility: hidden;
+      }
+    }
+
+    &[data-disabled='true'] {
+      opacity: 0.6;
+      cursor: not-allowed;
+
+      .c-input__label {
+        color: var(--color-text-muted);
+      }
+
+      .c-input__field {
+        background-color: var(--color-surface);
+        border-color: var(--color-border);
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      .c-input__prefix {
+        background-color: var(--color-surface);
+        border-color: var(--color-border);
+      }
+    }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

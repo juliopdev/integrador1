@@ -1,0 +1,26 @@
+@use 'sass:meta';
+
+@mixin styles {
+  .c-confirm-dialog-wrapper {
+    .c-confirm-dialog {
+      &__message {
+        font-family: var(--font-sans);
+        font-size: var(--font-size-sm);
+        color: var(--color-text);
+        line-height: var(--line-height-normal);
+        margin: 0;
+      }
+
+      &__actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--space-3);
+        width: 100%;
+      }
+    }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

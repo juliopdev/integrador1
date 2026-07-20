@@ -1,0 +1,37 @@
+<%
+  // P8: resumen visual COMPARTIDO del contrato — lo consumen el detalle de versión (botón "Ver"
+  // del listado) y el paso Compilar del asistente (pre-deploy). Compone las secciones existentes
+  // (estado + composición + auth/ws) y, si recibe `linkedProviders`, la card de proveedores.
+  const d = locals.detail;
+  const providers = locals.linkedProviders || null;
+
+  const CATEGORY_LABELS = { database: 'Base de datos', auth: 'Autenticación', storage: 'Assets' };
+%>
+<div class="u-flex u-flex-col u-gap-md">
+  <%- include('backend/feature/manage-platform-backend/presentation/views/sections/_backend-summary', { detail: d }) %>
+
+  <% if (providers) { %>
+    <%
+      const enabled = providers.filter((p) => p.enabled);
+      const byCategory = {};
+      for (const p of enabled) (byCategory[p.category] ??= []).push(p.provider);
+      const providersBody = enabled.length
+        ? `<div class="backend-stats">${Object.entries(byCategory).map(([cat, names]) => `
+            <div>
+              <span class="u-text-muted u-text-xs u-block u-mb-xs">${CATEGORY_LABELS[cat] || cat}</span>
+              ${names.map((n) => include('frontend/components/badge/ui', { variant: 'success', label: n })).join(' ')}
+            </div>
+          `).join('')}</div>`
+        : '<p class="u-text-muted u-text-sm u-m-0">Sin proveedores linkeados.</p>';
+    %>
+    <%- include('frontend/components/card/ui', {
+      title: 'Proveedores conectados',
+      body: providersBody,
+      padding: 'md',
+    }) %>
+  <% } %>
+
+  <%- include('backend/feature/manage-platform-backend/presentation/views/sections/_backend-composition', { detail: d }) %>
+
+  <%- include('backend/feature/manage-platform-backend/presentation/views/sections/_backend-auth-ws', { detail: d }) %>
+</div>

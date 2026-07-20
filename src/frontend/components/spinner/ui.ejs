@@ -1,0 +1,5 @@
+<%
+  const size = locals.size || 'md'; // sm | md | lg
+  const label = locals.label || 'Cargando';
+%>
+<span class="c-spinner c-spinner--<%= size %>" role="status" aria-label="<%= label %>"></span>

@@ -1,0 +1,167 @@
+@use 'sass:meta';
+
+@mixin styles {
+  .c-chat-box {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 25rem;
+    border: var(--border-thin) solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-surface);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+
+    &__header {
+      padding: var(--space-3) var(--space-4);
+      background-color: var(--color-surface-raised);
+      border-bottom: var(--border-thin) solid var(--color-border);
+    }
+
+    &__header-info {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    &__status-dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: var(--radius-full);
+      background-color: var(--color-success);
+      box-shadow: 0 0 0 2px var(--color-success-bg);
+      animation: chat-online-pulse 2s infinite ease-in-out;
+    }
+
+    &__title {
+      font-family: var(--font-sans);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text);
+    }
+
+    &__body {
+      flex: 1;
+      padding: var(--space-4);
+      overflow-y: auto;
+      background-color: var(--color-surface-raised);
+      outline: none;
+
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: var(--color-border-strong);
+        border-radius: var(--radius-full);
+      }
+    }
+
+    &__messages {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    &__message-wrapper {
+      display: flex;
+      width: 100%;
+
+      &--sent {
+        justify-content: flex-end;
+      }
+
+      &--received {
+        justify-content: flex-start;
+      }
+    }
+
+    &__bubble {
+      max-width: 75%;
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    &__message-wrapper--sent &__bubble {
+      background-color: var(--color-primary-600);
+      color: var(--color-on-primary);
+      border-bottom-right-radius: var(--radius-none);
+    }
+
+    &__message-wrapper--received &__bubble {
+      background-color: var(--color-surface);
+      color: var(--color-text);
+      border-bottom-left-radius: var(--radius-none);
+      border: var(--border-thin) solid var(--color-border);
+    }
+
+    &__text {
+      font-family: var(--font-sans);
+      font-size: var(--font-size-sm);
+      margin: 0;
+      line-height: var(--line-height-normal);
+      word-break: break-word;
+    }
+
+    &__time {
+      font-family: var(--font-sans);
+      font-size: 0.625rem;
+      align-self: flex-end;
+      opacity: 0.8;
+    }
+
+    &__message-wrapper--received &__time {
+      color: var(--color-text-muted);
+    }
+
+    &__footer {
+      display: flex;
+      gap: var(--space-2);
+      padding: var(--space-3);
+      background-color: var(--color-surface);
+      border-top: var(--border-thin) solid var(--color-border);
+    }
+
+    &__input {
+      flex: 1;
+      border: var(--border-thin) solid var(--color-border-strong);
+      border-radius: var(--radius-md);
+      padding: var(--space-2) var(--space-3);
+      font-family: var(--font-sans);
+      font-size: var(--font-size-sm);
+      background-color: var(--color-surface);
+      color: var(--color-text);
+      outline: none;
+
+      &:focus {
+        border-color: var(--color-primary-600);
+        box-shadow: 0 0 0 2px var(--color-primary-100);
+      }
+    }
+
+    &__send-btn {
+      flex-shrink: 0;
+    }
+  }
+
+  @keyframes chat-online-pulse {
+    0%, 100% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 var(--color-success-bg);
+    }
+    70% {
+      transform: scale(1);
+      box-shadow: 0 0 0 4px var(--color-success-pulse);
+    }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

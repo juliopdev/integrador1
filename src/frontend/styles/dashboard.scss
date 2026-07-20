@@ -1,0 +1,385 @@
+// Punto de compilación del Dashboard (SSR). Vite lo compila a public/styles/dashboard.css.
+// Suscribe los skins disponibles; en runtime, data-theme elige el skin y data-theme-mode el modo.
+
+@use 'themes/theme-manager' as theme;
+@use 'themes/default' as default;
+@use 'themes/minimalist' as minimalist;
+@use 'themes/glassmorphism' as glassmorphism;
+@use '../components' as c;
+@use 'shared/animations'; // @keyframes globales (fade-in/out, spin, pulse)
+@use 'shared/helpers'; // utilidades u-*
+@use 'shared/breakpoints' as bp; // media queries semánticas (down/up/between)
+// Estilos propietarios de cada feature (scss.md §7). Emiten su CSS de layout de páginas/secciones.
+@use '../../backend/feature/manage-platform-tenant/presentation/views' as _mpt-views;
+@use '../../backend/feature/tenant-data/presentation/views' as _td-views;
+@use '../../backend/feature/manage-platform-backend/presentation/views' as _mpb-views;
+@use '../../backend/feature/manage-admin-dashboard/presentation/views' as _mad-views;
+
+@include theme.reset;
+@include theme.apply(default.$theme);
+@include theme.apply(minimalist.$theme);
+@include theme.apply(glassmorphism.$theme);
+
+// Emisión bajo demanda de los componentes usados (se añaden a medida que se construyen).
+@include theme.subscribe(
+  c.button-ui(),
+  c.icon-ui(),
+  c.checkbox-ui(),
+  c.card-ui(),
+  c.badge-ui(),
+  c.alert-ui(),
+  c.spinner-ui(),
+  c.empty-state-ui(),
+  c.input-ui(),
+  c.modal-ui(),
+  c.toast-ui(),
+  c.form-ui(),
+  c.data-table-ui(),
+  c.stat-ui(),
+  c.breadcrumbs-ui(),
+  c.stepper-ui(),
+  c.theme-settings-ui(),
+  c.page-header-ui(),
+  c.sidebar-ui(),
+  c.user-pill-ui(),
+  c.textarea-ui(),
+  c.select-ui(),
+  c.radio-group-ui(),
+  c.search-input-ui(),
+  c.tabs-ui(),
+  c.pagination-ui(),
+  c.progress-ui(),
+  c.confirm-dialog-ui(),
+  c.tooltip-ui(),
+  c.file-upload-ui(),
+  c.dropdown-menu-ui(),
+  // c.context-menu-ui(),
+  c.copy-button-ui(),
+  // c.activity-feed-ui(),
+  // c.code-block-ui(),
+  c.terminal-ui(),
+  // c.chart-ui(),
+  // c.dynamic-table-ui(),
+  // c.dynamic-form-ui(),
+  // c.schema-designer-ui(),
+  c.chat-box-ui()
+);
+
+// ── Layout del Dashboard ──────────────────────────────────────────────
+.l-dashboard-grid {
+  display: grid;
+  grid-template-columns: var(--width-sidebar) 1fr;
+  min-height: 100vh;
+  background: var(--color-bg);
+  font-family: var(--font-sans);
+  // Anima el ancho del rail al colapsar/expandir (el resto del layout lo sigue solo).
+  transition: grid-template-columns var(--duration-normal) var(--easing-standard);
+}
+
+// El sidebar en sí es un componente aislado en `frontend/components/sidebar`.
+// Acá sólo vive lo que es LAYOUT del grid: cuánto ocupa la columna del rail cuando está
+// colapsado. El JS toggle-a ambas clases (grid + sidebar) en tándem.
+.l-dashboard-grid--collapsed {
+  grid-template-columns: 64px 1fr;
+}
+
+.l-main-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+// ── Topbar móvil + drawer (Iter UX P0) ────────────────────────────────
+// Sólo se ven bajo el breakpoint md. En desktop están ocultos; el sidebar es un rail estático.
+.l-mobile-topbar {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-surface);
+  border-bottom: var(--border-thin) solid var(--color-border);
+  align-items: center;
+  gap: var(--space-3);
+
+  &__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: transparent;
+    border: var(--border-thin) solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    cursor: pointer;
+
+    &:hover { background: var(--color-surface-raised); }
+    &:focus-visible {
+      outline: var(--border-thick) solid var(--color-focus-ring);
+      outline-offset: var(--border-thin);
+    }
+  }
+
+  &__brand {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+    letter-spacing: -0.5px;
+  }
+}
+
+.l-sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  z-index: calc(var(--z-sticky) - 1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-normal) var(--easing-standard);
+}
+
+@include bp.down('tablet') {
+  .l-dashboard-grid {
+    grid-template-columns: 1fr;
+    // El sidebar no reserva columna en móvil: se superpone como drawer.
+  }
+
+  .l-dashboard-grid--collapsed { grid-template-columns: 1fr; }
+
+  .l-mobile-topbar { display: flex; }
+
+  .c-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--width-sidebar);
+    max-width: 85vw;
+    height: 100vh;
+    z-index: var(--z-sticky);
+    transform: translateX(-100%);
+    transition: transform var(--duration-normal) var(--easing-standard);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .c-sidebar--mobile-open {
+    transform: translateX(0);
+  }
+
+  .l-sidebar-backdrop--visible {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+// ── Settings (cuerpo del modal de configuración, P1.2) ────────────────
+// Nav lateral de secciones + panel. Con una sola sección ("Apariencia") el nav es estático;
+// al agregar más secciones cada item alterna la visibilidad de su panel.
+.l-settings {
+  display: grid;
+  grid-template-columns: minmax(120px, 160px) 1fr;
+  gap: var(--space-4);
+
+  &__nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding-right: var(--space-3);
+    border-right: var(--border-thin) solid var(--color-border);
+  }
+
+  &__nav-item {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+
+    &--active {
+      background: color-mix(in srgb, var(--color-primary-600) 12%, transparent);
+      color: var(--color-primary-700);
+      font-weight: var(--font-weight-medium);
+    }
+  }
+
+  &__panel { min-width: 0; }
+}
+
+
+
+.l-main {
+  padding: var(--space-6);
+  flex: 1;
+  overflow-y: auto;
+}
+
+// ── Vistas del Dashboard (Home & Secciones) ───────────────────────────
+.l-dashboard-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.u-metric-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-600);
+  line-height: var(--line-height-tight);
+  margin-top: var(--space-1);
+}
+
+.l-dashboard-content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+
+  @include bp.down('laptop') {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ── Salud de Plataforma / Métricas de Recurso ─────────────────────────
+.c-health-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.c-health-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  border-bottom: var(--border-thin) solid var(--color-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &__name {
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    font-weight: var(--font-weight-medium);
+  }
+}
+
+// ── Feed de Actividad ────────────────────────────────────────────────
+.c-activity-feed {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.c-activity-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-thin) solid var(--color-border);
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+}
+
+.c-activity-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.c-activity-time {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.c-activity-message {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  line-height: var(--line-height-normal);
+}
+
+// ── Vista de Staff (Master) ───────────────────────────────────────────
+.l-staff {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  &__title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+    margin: 0;
+  }
+}
+
+.c-staff-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.c-staff-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: var(--border-thin) solid var(--color-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &__main {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  &__email {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+  }
+
+  &__roles {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+}
+
+/* Estilos de transición para Swup */
+html.is-animating .transition-fade {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.transition-fade {
+  transition: opacity var(--duration-normal) var(--easing-standard),
+              transform var(--duration-normal) var(--easing-standard);
+  opacity: 1;
+  transform: translateY(0);
+}
+

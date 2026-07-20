@@ -1,0 +1,201 @@
+// Estilos encapsulados del sidebar. SOLO tokens (cero literales salvo el rail colapsado);
+// motion por token. Se emite bajo demanda vía theme.subscribe(c.sidebar-ui()). Ver scss.md.
+//
+// Regla de oro del colapso: sólo cambia el eje horizontal (ancho del rail y ancho de labels).
+// Padding vertical, gap, tamaño de icono y padding de link se mantienen constantes entre
+// expandido y colapsado, para que los iconos NO se muevan de posición al alternar estados.
+//
+// El ancho del rail lo controla `.l-dashboard-grid` (layout) — este componente no conoce el grid.
+@use 'sass:meta';
+
+@mixin styles {
+  .c-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    padding: var(--space-6) var(--space-3);
+    // Pegado al viewport: el footer queda visible aunque la página sea larga; si el menú
+    // creciera más que la pantalla, scrollea el propio sidebar.
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-color: var(--color-surface);
+    backdrop-filter: var(--backdrop-filter);
+    -webkit-backdrop-filter: var(--backdrop-filter);
+    border-right: var(--border-thin) solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+    z-index: var(--z-sticky);
+
+    &__brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) 10px;
+      border-bottom: var(--border-thin) dashed var(--color-border);
+    }
+
+    &__logo-icon {
+      font-size: var(--font-size-lg);
+      background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--color-primary-600) 20%, transparent));
+    }
+
+    &__logo-text {
+      font-size: var(--font-size-md);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text);
+      letter-spacing: -0.5px;
+      white-space: nowrap; // no reflow del texto mientras el rail anima su ancho
+    }
+
+    &__nav {
+      flex: 1;
+    }
+
+    &__menu {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    &__link {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) 10px;
+      border-radius: var(--radius-md);
+      color: var(--color-text-muted);
+      text-decoration: none;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      transition: all var(--duration-normal) var(--easing-standard);
+
+      &:hover {
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        transform: translateX(var(--space-1));
+      }
+
+      &--active {
+        background: linear-gradient(135deg, var(--color-primary-50), var(--color-primary-100));
+        color: var(--color-primary-700);
+        font-weight: var(--font-weight-bold);
+        box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-surface) 50%, transparent);
+
+        &:hover {
+          background: linear-gradient(135deg, var(--color-primary-50), var(--color-primary-100));
+          color: var(--color-primary-700);
+          transform: none;
+        }
+      }
+    }
+
+    // Botón toggle colapsar/expandir (vive en el brand).
+    &__toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      margin-left: auto;
+      background: transparent;
+      border: var(--border-thin) solid transparent;
+      border-radius: var(--radius-sm);
+      color: var(--color-text-muted);
+      font-size: var(--font-size-md);
+      cursor: pointer;
+
+      &:hover {
+        background: var(--color-surface-raised);
+        color: var(--color-text);
+      }
+
+      &:focus-visible {
+        outline: var(--border-thick) solid var(--color-focus-ring);
+        outline-offset: var(--border-thin);
+      }
+    }
+
+    &__link-label {
+      white-space: nowrap; // idem logo-text: el label no se parte durante la animación del rail
+      transition: opacity var(--duration-fast) var(--easing-standard);
+    }
+
+    // Footer del sidebar (configuración + atajos externos del Superadmin). El `flex: 1` de
+    // `__nav` lo empuja al fondo.
+    &__footer {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      padding-top: var(--space-3);
+      border-top: var(--border-thin) dashed var(--color-border);
+    }
+
+    // `<button>` con la misma pinta que un link del menú (p.ej. "Configuración"), viva donde viva
+    // dentro del sidebar — si queda scopeado a un sub-bloque, el que esté fuera cae al estilo UA.
+    button.c-sidebar__link {
+      width: 100%;
+      background: transparent;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    &__shortcuts {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      margin-top: var(--space-2);
+      padding-top: var(--space-2);
+      border-top: var(--border-thin) dotted var(--color-border);
+
+      .c-sidebar__link {
+        opacity: 0.85;
+        font-size: var(--font-size-xs);
+      }
+    }
+
+    // ── Colapsado ────────────────────────────────────────────────────────
+    // Al colapsar sólo cambian dimensiones horizontales: labels ceden su ancho y el logo-icon
+    // desaparece. Padding vertical, gap, tamaño de icono y padding de link se conservan para
+    // que los glifos permanezcan en la misma (x,y) al alternar estados.
+    &--collapsed {
+      .c-sidebar__logo-text,
+      .c-sidebar__link-label {
+        opacity: 0;
+        visibility: hidden;
+        width: 0;
+        overflow: hidden;
+      }
+
+      // En el rail angosto el logo cede su lugar: queda solo el toggle (si no, peleaba con el
+      // texto por el poco ancho y ambos se encimaban).
+      .c-sidebar__logo-icon { display: none; }
+
+      // Sin gap para que el label colapsado (width: 0) no aporte espacio residual.
+      .c-sidebar__brand { gap: 0; }
+
+      // El toggle deja de empujarse a la derecha (ya no hay texto de marca que lo separe).
+      .c-sidebar__toggle { margin-left: 0; }
+
+      .c-sidebar__link {
+        gap: 0;
+
+        &:hover { transform: none; }
+      }
+    }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

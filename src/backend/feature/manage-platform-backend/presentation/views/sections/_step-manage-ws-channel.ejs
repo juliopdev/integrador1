@@ -1,0 +1,82 @@
+<%
+  // Paso 6 (`_step-manage-ws-channel` según .doc/tree/.../manage-platform-backend.md): el
+  // Superadmin habilita/deshabilita canales WebSocket sobre el contrato **publicado**. El use case
+  // `toggleWsChannel` exige un contrato activo (`NO_BACKEND` si no lo hay) — la sección refleja
+  // ese contrato mostrando o un CTA de vuelta a la composición, o el grid de toggles.
+  //
+  // Cada canal se renderiza como su propio mini-form (independiente): hidden `channel` + hidden
+  // `enabled` con el estado objetivo (opuesto al actual). Botón "Habilitar"/"Deshabilitar" hace
+  // el POST a `PUT /api-system/v1/tenants/:tenantId/backend/ws`; el `Form` intercepta, envía JSON
+  // y redirige al mismo paso (data-redirect=?step=ws).
+  //
+  // `coerceBoolean` en el `in.schema` acepta el string 'true'/'false' que emiten los FormData.
+  const t = locals.activeTenant || {};
+  const state = locals.wizardState || {};
+  const catalog = locals.wsChannels || [];
+  const activeChannels = new Set(state.publishedContract?.schema?.websocket?.channels || []);
+  const hasContract = Boolean(state.publishedContract);
+
+  const humanize = {
+    user_to_user: 'Usuario ↔ Usuario (chat directo)',
+    user_to_room: 'Sala compartida',
+    user_to_admin: 'Usuario → Soporte (rol `support` auto)',
+    notifications_global: 'Notificaciones globales',
+  };
+%>
+
+<div class="u-flex u-flex-col u-gap-md">
+  <% if (!hasContract) { %>
+    <%- include('frontend/components/card/ui', {
+      title: 'Sin backend publicado',
+      subtitle: 'Los canales WebSocket solo se gestionan sobre un contrato publicado. Componelo primero en el paso "Componer el contrato" y publica una versión — luego vuelve aquí para habilitar canales.',
+      body: include('frontend/components/button/ui', {
+        label: 'Ir a componer el contrato',
+        href: `/dashboard/backends/${t.id}?step=api`,
+        variant: 'primary',
+      }),
+      padding: 'lg',
+    }) %>
+  <% } else { %>
+    <%
+      // P7.2: switch con autosubmit — marcar/desmarcar envía el PUT al instante. Sin hidden
+      // gemelo (P0.2): desmarcado ⇒ `enabled` ausente ⇒ false en el schema.
+      const channelsHtml = catalog.map((channel) => {
+        const enabled = activeChannels.has(channel);
+        const badge = include('frontend/components/badge/ui', {
+          variant: enabled ? 'success' : 'neutral',
+          label: enabled ? 'Habilitado' : 'Deshabilitado',
+        });
+        const form = `
+          <form class="c-form l-nocode-cell-form" method="post" action="/api-system/v1/tenants/${t.id}/backend/ws" data-method="put" data-redirect="/dashboard/backends/${t.id}?step=ws" data-channel="${channel}" data-autosubmit>
+            <input type="hidden" name="channel" value="${channel}" />
+            ${include('frontend/components/checkbox/ui', {
+              name: 'enabled',
+              variant: 'switch',
+              checked: enabled,
+              ariaLabel: `Canal ${channel}`,
+              id: `ws-${channel}`,
+            })}
+          </form>
+        `;
+        return `
+          <div class="ws-channel">
+            <div class="l-ws-channel__main">
+              <div class="l-ws-channel__head">
+                <code class="u-text-sm u-text-strong">${channel}</code>
+                ${badge}
+              </div>
+              <span class="u-text-muted u-text-xs">${humanize[channel] || ''}</span>
+            </div>
+            ${form}
+          </div>
+        `;
+      }).join('');
+    %>
+    <%- include('frontend/components/card/ui', {
+      title: 'Canales WebSocket',
+      subtitleHtml: `Contrato publicado: <code>${state.publishedContract.version}</code>. Cada toggle escribe sobre <code>schema.websocket.channels</code> del contrato activo.`,
+      body: channelsHtml,
+      padding: 'lg',
+    }) %>
+  <% } %>
+</div>

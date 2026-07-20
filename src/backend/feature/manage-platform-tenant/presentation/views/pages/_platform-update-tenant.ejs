@@ -1,0 +1,23 @@
+<%
+  const t = locals.activeTenant || {};
+%>
+<%# Chrome full-width (breadcrumbs + header alineados como en los listados); solo los cards se centran. %>
+<div class="u-flex u-flex-col u-gap-md">
+  <div>
+    <%- include('frontend/components/breadcrumbs/ui', {
+    currentPath: locals.currentPath,
+      items: [
+        { label: 'Inicio', href: '/dashboard' },
+        { label: 'Tenants', href: '/dashboard/tenants' },
+        { label: t.subdomain || 'Tenant' },
+      ],
+    }) %>
+    <%- include('frontend/components/page-header/ui', {
+      title: `Gestionar Tenant: ${t.subdomain}`,
+    }) %>
+  </div>
+
+  <div class="l-tenant-detail u-w-full u-flex u-flex-col u-gap-md">
+    <%- include('backend/feature/manage-platform-tenant/presentation/views/sections/_panel-tenant-actions', locals) %>
+  </div>
+</div>

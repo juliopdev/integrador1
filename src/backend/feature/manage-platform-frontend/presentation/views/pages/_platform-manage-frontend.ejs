@@ -1,0 +1,75 @@
+<%
+  const tenant = locals.tenant;
+  const deploy = locals.deploy;
+  const escHtml = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+%>
+
+<div class="u-flex u-flex-col u-gap-md">
+  <%- include('frontend/components/breadcrumbs/ui', {
+    currentPath: locals.currentPath,
+    items: [
+      { label: 'Inicio', href: '/dashboard' },
+      { label: 'Frontends', href: '/dashboard/frontends' },
+      { label: tenant.subdomain },
+    ],
+  }) %>
+
+  <%
+    // Fix: el subtítulo contiene HTML (`<strong>`), así que va por `subtitleHtml` (el componente
+    // escapa `subtitle`). El `status` se omite: siempre es 'active' cuando hay deploy → redundante.
+    const headerOpts = { titleHtml: `Frontend de <code>${escHtml(tenant.subdomain)}</code>` };
+    if (deploy) {
+      const modeLabel = deploy.mode === 'external' ? 'Externo (redirect)' : 'Hospedado';
+      headerOpts.subtitleHtml = `Modo actual: <strong>${modeLabel}</strong>`;
+    } else {
+      headerOpts.subtitle = 'Todavía no hay configuración. Elegí el modo abajo.';
+    }
+  %>
+  <%- include('frontend/components/page-header/ui', headerOpts) %>
+
+  <%
+    const tabs = [
+      { id: 'fe-external', label: 'Externo', active: !deploy || deploy.mode === 'external' },
+      { id: 'fe-hosted', label: 'Hospedado', active: deploy?.mode === 'hosted' },
+    ];
+    if (deploy) tabs.push({ id: 'fe-danger', label: 'Zona peligrosa' });
+  %>
+  <%- include('frontend/components/tabs/ui', {
+    class: 'l-frontend-tabs',
+    items: tabs,
+  }) %>
+
+  <div id="fe-external" data-tab-panel="fe-external" role="tabpanel" aria-labelledby="tab-fe-external"<% if (deploy && deploy.mode !== 'external') { %> hidden style="display: none;"<% } %>>
+    <%- include('frontend/components/card/ui', {
+      title: 'Modo externo (redirect)',
+      subtitle: 'El tenant usa su propio dominio; le regalás un subdominio que redirige.',
+      body: include('../sections/_form-external', locals),
+      padding: 'lg',
+    }) %>
+  </div>
+
+  <div id="fe-hosted" data-tab-panel="fe-hosted" role="tabpanel" aria-labelledby="tab-fe-hosted"<% if (deploy?.mode !== 'hosted') { %> hidden style="display: none;"<% } %>>
+    <%- include('frontend/components/card/ui', {
+      title: 'Modo hospedado',
+      subtitle: 'Subí un archivo .zip o .rar con tu frontend. Se sirve directamente desde el VPS.',
+      body: include('../sections/_form-hosted', locals),
+      padding: 'lg',
+    }) %>
+  </div>
+
+  <% if (deploy) { %>
+    <div id="fe-danger" data-tab-panel="fe-danger" role="tabpanel" aria-labelledby="tab-fe-danger" hidden style="display: none;">
+      <%- include('frontend/components/card/ui', {
+        titleHtml: '<span class="u-text-danger">Zona peligrosa</span>',
+        subtitleHtml: 'El tenant dejará de ser servido por Caddy hasta que reconfigures.',
+        headerActions: include('../sections/_form-delete', locals),
+        padding: 'md',
+      }) %>
+    </div>
+  <% } %>
+</div>
+
+<!-- Modales de Variables de Entorno -->
+<%- include('../sections/_panel-env-info', locals) %>
+<%- include('../sections/_form-add-var', locals) %>
+<%- include('../sections/_form-import-lote', locals) %>

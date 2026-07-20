@@ -1,0 +1,160 @@
+<%
+  const category = locals.category;
+  const label = locals.label;
+  const subtitle = locals.subtitle;
+  const isOpen = locals.isOpen || false;
+  const linked = locals.linked || [];
+  const providerUsage = locals.providerUsage || {};
+  const providerCatalog = locals.providerCatalog || {};
+  const t = locals.activeTenant || {};
+  const CATALOG = providerCatalog;
+
+  const isLinked = (cat, provider) =>
+    linked.some((p) => p.category === cat && p.provider === provider && p.enabled);
+
+  const renderProviderForm = (cat, entry) => {
+    if (!entry.operable) {
+      return `
+        <div class="provider-card provider-card--disabled">
+          <div class="l-provider-card__header">
+            <div class="u-flex u-items-center u-gap-xs">
+              <strong class="u-text-sm">${entry.label}</strong>
+            </div>
+            ${include('frontend/components/badge/ui', { variant: 'neutral', label: 'Próximamente' })}
+          </div>
+          <span class="u-text-muted u-text-xs u-block u-mt-xs">Aún no soportado por el motor No-Code.</span>
+        </div>
+      `;
+    }
+
+    if (isLinked(cat, entry.provider)) {
+      const usage = providerUsage[`${cat}::${entry.provider}`] || { published: [], draft: [], publishedVersion: null };
+      const publishedCount = usage.published.length;
+      const draftCount = usage.draft.length;
+      let usageHtml = '';
+      if (publishedCount > 0) {
+        usageHtml = `
+          <div class="u-mt-xs u-text-xs u-text-error">
+            ⚠ Usado por el contrato publicado <code>${usage.publishedVersion}</code> en ${publishedCount} elemento(s). Deslinkear está bloqueado hasta publicar una versión que no lo use.
+          </div>
+        `;
+      } else if (draftCount > 0) {
+        usageHtml = `
+          <div class="u-mt-xs u-text-xs u-text-warning">
+            ⚠ El borrador en curso lo usa en ${draftCount} elemento(s). Deslinkear pedirá confirmación explícita.
+          </div>
+        `;
+      }
+      const disableBtn = publishedCount > 0;
+
+      let settingsHtml = '';
+      const settingsFields = entry.settings && Array.isArray(entry.settings.fields) ? entry.settings.fields : [];
+      if (settingsFields.length > 0) {
+        const currentLinked = linked.find((p) => p.category === cat && p.provider === entry.provider);
+        const currentSettings = (currentLinked && currentLinked.settings) || {};
+        const readPath = (path) => path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), currentSettings);
+
+        const checkboxesHtml = settingsFields.map((f) => {
+          const checked = readPath(f.name) === true;
+          return `
+            <label class="u-flex u-flex-col u-gap-2xs u-mb-xs">
+              <span class="u-flex u-items-center u-gap-xs u-text-sm">
+                <input type="hidden" name="settings.${f.name}" value="false" />
+                <input type="checkbox" name="settings.${f.name}" value="true" ${checked ? 'checked' : ''} />
+                <strong>${f.label}</strong>
+              </span>
+              ${f.description ? `<span class="u-text-xs u-text-muted u-ml-lg">${f.description}</span>` : ''}
+            </label>
+          `;
+        }).join('');
+
+        settingsHtml = `
+          <details class="l-provider-card__settings u-mt-sm">
+            <summary class="u-text-xs u-text-muted u-cursor-pointer">Políticas del provider</summary>
+            <form class="c-form u-mt-xs" method="post" action="/api-system/v1/tenants/${t.id}/providers/${cat}/${entry.provider}/settings" data-method="put" data-redirect="/dashboard/backends/${t.id}?step=provider">
+              ${checkboxesHtml}
+              ${include('frontend/components/button/ui', { type: 'submit', variant: 'primary', size: 'sm', label: 'Guardar políticas' })}
+            </form>
+          </details>
+        `;
+      }
+
+      return `
+        <div class="provider-card provider-card--linked">
+          <div class="l-provider-card__header">
+            <div class="u-flex u-items-center u-gap-xs">
+              <span class="provider-card__checkbox provider-card__checkbox--checked">
+                <svg class="c-icon c-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </span>
+              <strong class="u-text-sm">${entry.label}</strong>
+              ${include('frontend/components/badge/ui', { variant: 'success', label: 'Linkeado' })}
+            </div>
+            <form class="c-form l-nocode-cell-form" method="post" action="/api-system/v1/tenants/${t.id}/providers/${cat}/${entry.provider}" data-method="delete" data-redirect="/dashboard/backends/${t.id}?step=provider">
+              ${include('frontend/components/button/ui', {
+                type: 'submit', variant: 'ghost', size: 'sm', label: 'Deslinkear', icon: 'trash',
+                disabled: disableBtn,
+                ariaLabel: disableBtn ? 'Deslinkear bloqueado: el contrato publicado usa este provider' : null,
+              })}
+            </form>
+          </div>
+          ${usageHtml}
+          ${settingsHtml}
+        </div>
+      `;
+    }
+
+    const inputsHtml = entry.fields.map((f) => include('frontend/components/input/ui', {
+      name: f.name, label: f.label, placeholder: f.placeholder, type: f.type, required: true,
+    })).join('');
+    return `
+      <div class="provider-card" data-provider="${entry.provider}">
+        <div class="l-provider-card__header l-provider-card__header-click">
+          <div class="u-flex u-items-center u-gap-xs">
+            <span class="provider-card__checkbox"></span>
+            <strong class="u-text-sm">${entry.label}</strong>
+          </div>
+          ${include('frontend/components/badge/ui', { variant: 'success', label: 'Disponible' })}
+        </div>
+        <div class="l-provider-card__config" id="config-${entry.provider}">
+          <form class="c-form u-mt-sm" method="post" action="/api-system/v1/tenants/${t.id}/providers" data-redirect="/dashboard/backends/${t.id}?step=provider">
+            <input type="hidden" name="category" value="${cat}" />
+            <input type="hidden" name="provider" value="${entry.provider}" />
+            <div class="u-flex u-flex-col u-gap-sm u-mb-sm">
+              ${inputsHtml}
+            </div>
+            ${include('frontend/components/button/ui', {
+              type: 'submit', variant: 'primary', size: 'sm',
+              label: entry.fields.length ? `Linkear ${entry.provider}` : `Activar ${entry.label}`,
+              class: 'u-w-full',
+            })}
+          </form>
+        </div>
+      </div>
+    `;
+  };
+
+  const providersOf = (cat) => `
+    <div class="provider-grid">
+      ${(CATALOG[cat] || []).map((entry) => renderProviderForm(cat, entry)).join('')}
+    </div>
+  `;
+
+  const linkedN = linked.filter((p) => p.category === category && p.enabled).length;
+  const totalN = (CATALOG[category] || []).filter((e) => e.operable).length;
+  const countClass = linkedN > 0 ? 'l-provider-category__count l-provider-category__count--linked' : 'l-provider-category__count';
+  const chevronSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>`;
+%>
+
+<details class="l-provider-category"<%= isOpen ? ' open' : '' %>>
+  <summary class="l-provider-category__summary">
+    <span class="l-provider-category__title">
+      <span class="l-provider-category__label"><%= label %></span>
+      <span class="l-provider-category__subtitle"><%= subtitle %></span>
+    </span>
+    <span class="<%= countClass %>"><%= linkedN %> de <%= totalN %> linkeados</span>
+    <span class="l-provider-category__chevron"><%- chevronSvg %></span>
+  </summary>
+  <div class="l-provider-category__body">
+    <%- providersOf(category) %>
+  </div>
+</details>

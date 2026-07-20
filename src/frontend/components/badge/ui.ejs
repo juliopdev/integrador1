@@ -1,6 +1,5 @@
 <%
-  const badgeClass = locals.variant ? `badge badge--${variant}` : 'badge badge--primary';
+  const label = locals.label || '';
+  const variant = locals.variant || 'neutral'; // success | warning | error | info | neutral
 %>
-<span class="<%= badgeClass %> <%= locals.className || '' %>">
-  <%= locals.label || 'Badge' %>
-</span>
+<span class="c-badge c-badge--<%= variant %>"><%= label %></span>

@@ -1,0 +1,47 @@
+<%
+  // Section transversal (views.md §5, §7): "frame" superior de una página del dashboard —
+  // breadcrumbs + page-header con acción principal opcional. Se usa desde CUALQUIER feature
+  // que renderice una página en el layout `dashboard.ejs`, para garantizar coherencia visual
+  // sin acoplarse a un feature dueño.
+  //
+  // Params:
+  //   - breadcrumb  : [{ label, href? }]  — items del breadcrumb (el último NO lleva href).
+  //   - title       : string              — título de la página. Acepta `titleHtml` para HTML de confianza (emoji, code).
+  //   - subtitle    : string?             — subtítulo debajo del título.
+  //   - action      : object?             — botón principal arriba a la derecha:
+  //                     { label, icon?, href?, action?, target?, variant? }
+  //                   Ausente → sólo título + subtítulo.
+  //   - variant     : 'default' | 'hero'  — `hero` usa <h1> con padding + gradiente (landing/home).
+  //                                         `default` usa <h2> plano (gestión).
+  //   - currentPath : string              — pasa al breadcrumbs para neutralizar self-links.
+  //
+  // NO renderiza wrapper: la página dueña sigue proveyendo el `<div class="u-flex ...">` para
+  // controlar el gap con las secciones siguientes.
+  const breadcrumb = locals.breadcrumb || [];
+  const title = locals.title || '';
+  const titleHtml = locals.titleHtml || null;
+  const subtitle = locals.subtitle || null;
+  const variant = locals.variant || 'default';
+  const action = locals.action || null;
+  const actionsHtml = action
+    ? include('frontend/components/button/ui', {
+        label: action.label,
+        icon: action.icon || null,
+        href: action.href || null,
+        action: action.action || null,
+        target: action.target || null,
+        variant: action.variant || 'primary',
+      })
+    : null;
+%>
+<%- include('frontend/components/breadcrumbs/ui', {
+  currentPath: locals.currentPath,
+  items: breadcrumb,
+}) %>
+<%- include('frontend/components/page-header/ui', {
+  title,
+  titleHtml,
+  subtitle,
+  variant,
+  actions: actionsHtml,
+}) %>

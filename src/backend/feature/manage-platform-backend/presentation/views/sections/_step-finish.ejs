@@ -1,0 +1,161 @@
+<%
+  // Paso 7 (`_step-finish` según .doc/tree/.../manage-platform-backend.md): compilar y desplegar.
+  // Este paso cierra el ciclo del asistente: acepta el contrato en JSON, lo publica y compila
+  // (`POST /api-system/v1/tenants/:tenantId/backend`) — el use case `publish-contract` valida la
+  // gramática y `compile-backend` crea/migra las tablas físicas (no-code.md).
+  //
+  // Interfaz MVP: textarea con el JSON del contrato. Si ya hay un contrato publicado, viene
+  // pre-poblado con su schema (para editar y re-publicar); si no, con un esqueleto v1.
+  // El editor visual completo llega con `_step-manage-api`.
+  //
+  // El endpoint acepta dos shapes: `{ ...contrato }` (API) o `{ contractJson: "..." }` (Form SSR).
+  const t = locals.activeTenant || {};
+  const state = locals.wizardState || {};
+  const pub = state.publishedContract;
+  const draft = state.draftContract;
+
+  // Plantilla vacía v1 — sirve como punto de partida cuando no hay historial.
+  const templateContract = {
+    version: 'v1',
+    stores: { sql: { provider: 'neon', enabled: true } },
+    resources: [
+      {
+        name: 'items',
+        store: 'sql',
+        physicalName: 'items_db',
+        fields: [
+          { id: 'f1', name: 'title', type: 'string', required: true },
+        ],
+      },
+    ],
+    endpoints: [
+      { path: '/items', resource: 'items', methods: ['GET', 'POST'] },
+    ],
+    auth: { userAuthEnabled: false },
+    websocket: { channels: [] },
+  };
+
+  // Prioridad de pre-poblado: draft (si está en curso) → publicado (para editar y republicar) →
+  // plantilla vacía. El draft gana porque representa la intención en curso del asistente.
+  const currentSchema = draft ? draft.schema : (pub ? pub.schema : templateContract);
+  const prefill = JSON.stringify(currentSchema, null, 2);
+  const nextVersionHint = pub
+    ? `Re-publicar con la misma versión (<code>${pub.version}</code>) actualiza el contrato activo; para una versión nueva cambia <code>version</code> a <code>v${(Number(String(pub.version).replace(/^v/, '')) || 0) + 1}</code>.`
+    : 'Al publicar por primera vez se creará <code>v1</code> con el esquema base incluido.';
+
+  // Iter 32 F: mini-diff draft vs publicado. `state.diffSummary` es null si no hay draft.
+  const diff = state.diffSummary;
+  const pendingChanges = diff ? (() => {
+    const line = (label, d) => {
+      const parts = [];
+      if (d.added) parts.push(include('frontend/components/badge/ui', { variant: 'success', label: `+${d.added}` }));
+      if (d.removed) parts.push(include('frontend/components/badge/ui', { variant: 'danger', label: `-${d.removed}` }));
+      if (d.modified) parts.push(include('frontend/components/badge/ui', { variant: 'warning', label: `~${d.modified}` }));
+      if (parts.length === 0) parts.push('<span class="u-text-muted">sin cambios</span>');
+      return `<li class="u-flex u-items-center u-gap-xs u-mb-xs"><strong>${label}:</strong> <div class="u-flex u-items-center u-gap-xs">${parts.join('')}</div></li>`;
+    };
+    const authLine = `<li class="u-flex u-items-center u-gap-xs u-mb-xs"><strong>Auth de Users:</strong> ${diff.auth.changed
+      ? include('frontend/components/badge/ui', { variant: 'warning', label: 'Modificada' })
+      : '<span class="u-text-muted">sin cambios</span>'}</li>`;
+    const wsParts = [];
+    if (diff.websocket.added) wsParts.push(include('frontend/components/badge/ui', { variant: 'success', label: `+${diff.websocket.added}` }));
+    if (diff.websocket.removed) wsParts.push(include('frontend/components/badge/ui', { variant: 'danger', label: `-${diff.websocket.removed}` }));
+    if (diff.websocket.modified) wsParts.push(include('frontend/components/badge/ui', { variant: 'warning', label: `~${diff.websocket.modified}` }));
+    if (wsParts.length === 0) wsParts.push('<span class="u-text-muted">sin cambios</span>');
+    const wsLine = `<li class="u-flex u-items-center u-gap-xs u-mb-xs"><strong>WS canales:</strong> <div class="u-flex u-items-center u-gap-xs">${wsParts.join('')}</div></li>`;
+
+    const headerLabel = diff.isFirstPublish
+      ? `Primera publicación — ${diff.total} elemento(s) nuevo(s)`
+      : `${diff.total} cambio(s) pendiente(s) sobre <code>${pub?.version || ''}</code>`;
+    return {
+      subtitleHtml: `${headerLabel}. Se aplican al confirmar la publicación.`,
+      body: `
+        <ul class="nocode-list">
+          ${line('Resources', diff.resources)}
+          ${line('Fields', diff.fields)}
+          ${line('Endpoints', diff.endpoints)}
+          ${authLine}
+          ${wsLine}
+        </ul>
+      `,
+    };
+  })() : null;
+
+  // P1.3: descartar el draft vive en el botón "Reiniciar" del wizard-nav (modal de
+  // confirmación) — único punto de borrado del asistente.
+
+  const publishConfirmMsg = diff && !diff.isFirstPublish
+    ? `Vas a publicar ${diff.total} cambio(s) sobre ${pub?.version || 'el contrato activo'}. Esto migra las tablas físicas. ¿Continuar?`
+    : 'Vas a publicar el contrato. Esto crea/migra las tablas físicas. ¿Continuar?';
+
+
+  const formHtml = `
+    <form class="c-form" method="post" action="/api-system/v1/tenants/${t.id}/backend" data-confirm="${publishConfirmMsg.replace(/"/g, '&quot;')}" data-redirect="/dashboard/backends/${t.id}?step=finish">
+      <details class="contract-json-toggle">
+        <summary>JSON del Contrato (Vista Desarrollador)</summary>
+        <div class="u-mt-sm">
+          <textarea class="nocode-textarea" id="contractJson" name="contractJson" rows="18" required>${prefill.replace(/</g, '&lt;')}</textarea>
+        </div>
+      </details>
+      <p class="u-text-muted u-text-xs u-mt-md u-mb-md">
+        ${nextVersionHint} La publicación compila las tablas nuevas y migra las existentes por
+        <code>field.id</code> preservando los datos.
+      </p>
+      ${include('frontend/components/button/ui', {
+        type: 'submit',
+        variant: 'primary',
+        label: 'Compilar y deploy',
+        loadingLabel: 'Compilando y desplegando…',
+        class: 'u-w-full',
+      })}
+      <div class="deploy-stepper">
+        <div class="deploy-step" data-step="1">
+          <svg class="c-icon c-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          <span>Validando diseño...</span>
+        </div>
+        <div class="deploy-step" data-step="2">
+          <svg class="c-icon c-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          <span>Aprovisionando base de datos...</span>
+        </div>
+        <div class="deploy-step" data-step="3">
+          <svg class="c-icon c-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          <span>¡Todo listo!</span>
+        </div>
+      </div>
+    </form>
+  `;
+%>
+
+<div class="u-flex u-flex-col u-gap-md">
+  <%# P8: resumen visual compartido — lo que se ve aquí es lo que quedará publicado. Prioriza el
+      draft (intención en curso); sin draft muestra el publicado. %>
+  <%- include('backend/feature/manage-platform-backend/presentation/views/sections/_backend-summary-visual', {
+    detail: {
+      version: (draft || pub) ? (draft ? draft.version : pub.version) : 'v1',
+      status: draft ? 'draft' : (pub ? pub.status : 'draft'),
+      schema: currentSchema,
+    },
+    linkedProviders: state.linkedProviders || null,
+  }) %>
+
+  <% if (pub) { %>
+    <p class="u-text-sm u-m-0">
+      <a class="u-link" href="/dashboard/backends/<%= t.id %>/versions/<%= pub.version %>">→ Ver detalle de <code><%= pub.version %></code></a>
+    </p>
+  <% } %>
+
+  <% if (pendingChanges) { %>
+    <%- include('frontend/components/card/ui', {
+      title: 'Cambios pendientes',
+      subtitleHtml: pendingChanges.subtitleHtml,
+      body: pendingChanges.body,
+      padding: 'md',
+    }) %>
+  <% } %>
+
+  <%- include('frontend/components/card/ui', {
+    title: 'Compilar y desplegar',
+    body: formHtml,
+    padding: 'lg',
+  }) %>
+</div>

@@ -1,0 +1,99 @@
+@use 'sass:meta';
+
+@mixin styles {
+  .c-dropdown-menu {
+    position: absolute;
+    // El dropdown se posiciona absoluto contra el document y puede quedar sobre el sidebar sticky
+    // (que tiene `--z-sticky`); su token debe ser superior. Ver `themes/default/_measures.scss`.
+    z-index: var(--z-dropdown);
+    width: 12.5rem;
+    background-color: var(--color-surface);
+    border: var(--border-thin) solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-1) 0;
+    display: none;
+    transform-origin: top left;
+
+    &[data-open="true"] {
+      display: block;
+      animation: dropdown-menu-enter var(--duration-fast) var(--easing-decelerate);
+    }
+
+    &__list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    &__item-wrapper {
+      padding: 0;
+      margin: 0;
+    }
+
+    &__item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      width: 100%;
+      padding: var(--space-2) var(--space-4);
+      background: none;
+      border: none;
+      color: var(--color-text);
+      font-family: var(--font-sans);
+      font-size: var(--font-size-sm);
+      text-decoration: none;
+      text-align: left;
+      cursor: pointer;
+      transition: background-color var(--duration-fast) var(--easing-standard),
+                  color var(--duration-fast) var(--easing-standard);
+
+      &:hover:not(:disabled):not(&--disabled) {
+        background-color: var(--color-surface-raised);
+      }
+
+      &--destructive {
+        color: var(--color-error);
+
+        &:hover:not(:disabled):not(&--disabled) {
+          background-color: var(--color-error-50);
+          color: var(--color-error);
+        }
+      }
+
+      &:disabled,
+      &--disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+    }
+
+    &__icon {
+      display: flex;
+      align-items: center;
+      color: var(--color-text-muted);
+    }
+
+    &__item--destructive &__icon {
+      color: inherit;
+    }
+  }
+
+  @keyframes dropdown-menu-enter {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

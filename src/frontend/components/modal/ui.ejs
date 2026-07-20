@@ -1,0 +1,18 @@
+<%
+  const id = locals.id || 'modal';
+  const title = locals.title || '';
+  const body = locals.body || '';      // HTML de confianza (lo compone la sección)
+  const footer = locals.footer || null; // HTML de confianza (botones de acción)
+  const size = locals.size || 'md';    // md | lg (lg = modales con nav lateral)
+%>
+<div class="c-modal<%= size === 'lg' ? ' c-modal--lg' : '' %>" id="<%= id %>" data-open="false" role="dialog" aria-modal="true">
+  <div class="c-modal__overlay" data-action="modal:close" data-target="<%= id %>"></div>
+  <div class="c-modal__dialog">
+    <header class="c-modal__header">
+      <h3 class="c-modal__title"><%= title %></h3>
+      <button class="c-modal__close" type="button" aria-label="Cerrar" data-action="modal:close" data-target="<%= id %>">&times;</button>
+    </header>
+    <div class="c-modal__body"><%- body %></div>
+    <% if (footer) { %><footer class="c-modal__footer"><%- footer %></footer><% } %>
+  </div>
+</div>

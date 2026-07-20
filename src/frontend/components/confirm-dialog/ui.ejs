@@ -1,0 +1,17 @@
+<%
+  const id = locals.id || 'confirm-dialog';
+%>
+<div class="c-confirm-dialog-wrapper">
+  <%- include('frontend/components/modal/ui', {
+    id: id,
+    title: 'Confirmar acción',
+    body: '<p class="c-confirm-dialog__message"></p>',
+    footer: `
+      <div class="c-confirm-dialog__actions">
+        <button type="button" class="c-button c-button--ghost c-confirm-dialog__btn-cancel">Cancelar</button>
+        <button type="button" class="c-button c-confirm-dialog__btn-confirm">Confirmar</button>
+      </div>
+    `,
+    size: 'md'
+  }) %>
+</div>

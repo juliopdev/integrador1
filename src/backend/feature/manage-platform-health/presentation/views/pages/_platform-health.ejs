@@ -1,0 +1,186 @@
+<%
+  const h = locals.health || {};
+  const s = h.system || {};
+  const st = h.storage || {};
+  const p = h.platform || {};
+  const j = h.jobs || { byStatus: {}, recent: [] };
+
+  const escHtml = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const fmtBytes = (b) => {
+    if (!b) return '0 B';
+    const u = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let i = 0; let n = Number(b);
+    while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+    return `${n.toFixed(i > 0 ? 1 : 0)} ${u[i]}`;
+  };
+  const fmtSec = (s) => {
+    if (!s) return '0 s';
+    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    if (d > 0) return `${d}d ${h}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m ${s % 60}s`;
+  };
+  const fmtAgo = (ms) => {
+    if (!ms) return '—';
+    const diff = Math.max(0, Date.now() - Number(ms));
+    const s = Math.floor(diff / 1000);
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}min`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h`;
+    return `${Math.floor(h / 24)}d`;
+  };
+
+  const stat = (label, value, sub) => `
+    <div class="l-stat">
+      <div class="l-stat__label">${escHtml(label)}</div>
+      <div class="l-stat__value">${escHtml(value)}</div>
+      ${sub ? `<div class="l-stat__sub u-text-muted u-text-sm">${escHtml(sub)}</div>` : ''}
+    </div>
+  `;
+%>
+
+<div class="u-flex u-flex-col u-gap-md">
+  <%- include('frontend/components/breadcrumbs/ui', {
+    currentPath: locals.currentPath,
+    items: [
+      { label: 'Inicio', href: '/dashboard' },
+      { label: 'Health' },
+    ],
+  }) %>
+
+  <%- include('frontend/components/page-header/ui', {
+    title: 'Health de la plataforma',
+    subtitle: `Snapshot generado a las ${new Date(h.generatedAt || Date.now()).toLocaleTimeString('es-PE')}. La página se refresca automáticamente cada 30 s.`,
+  }) %>
+
+  <!-- Iter 53 fix: `data-refresh-seconds` lo lee un handler en dashboard.entry.js que sí respeta
+       el ciclo de vida de Swup (limpia el timer al salir de la página + valida que sigamos en
+       el mismo pathname antes de refrescar). El anterior `<meta http-equiv="refresh">` quedaba
+       atornillado al URL del parse y devolvía al usuario a esta página al navegar. -->
+  <span data-refresh-seconds="30" hidden></span>
+
+  <!-- Iter 55: tabs internos [Sistema · Almacenamiento · Actividad de jobs]. El plan
+       (`.plans/DASHBOARD-REDESIGN.md` §5) argumenta que Health se volvió scroll vertical largo:
+       tres contextos heterogéneos que compiten por atención. Tabs agrupan sin fragmentar la URL —
+       deep-link a un tab con `?tab=jobs` queda para Slice B. -->
+  <%- include('frontend/components/tabs/ui', {
+    class: 'l-health-tabs',
+    items: [
+      { id: 'health-system', label: 'Sistema (VPS)', active: true },
+      { id: 'health-storage', label: 'Almacenamiento' },
+      { id: 'health-jobs', label: 'Actividad de jobs' },
+    ],
+  }) %>
+
+  <!-- Panel Sistema -->
+  <div id="health-system" data-tab-panel="health-system" role="tabpanel" aria-labelledby="tab-health-system" class="u-flex u-flex-col u-gap-md">
+    <%- include('frontend/components/card/ui', {
+      title: 'Sistema (VPS)',
+      subtitle: `${s.hostname || '—'} · ${s.platform || '?'} ${s.arch || ''} · Node ${s.nodeVersion || '?'}`,
+      body: `
+        <div class="l-stat-grid">
+          ${stat('Uptime del proceso', fmtSec(s.uptimeSec || 0))}
+          ${stat('Cores', s.cpu?.cores ?? '—', `load1: ${(s.cpu?.loadavg1 ?? 0).toFixed(2)}`)}
+          ${stat('Memoria usada', fmtBytes(s.memory?.usedBytes), `${s.memory?.usagePct ?? 0}% de ${fmtBytes(s.memory?.totalBytes)}`)}
+          ${stat('Memoria libre', fmtBytes(s.memory?.freeBytes))}
+        </div>
+      `,
+      padding: 'md',
+    }) %>
+  </div>
+
+  <!-- Panel Almacenamiento — combina disco + agregados de plataforma (tenants/frontends/memberships).
+       El agregado de plataforma NO es "actividad" (no cambia por evento del worker) — es estado
+       persistente contable, encaja con "cuánto hay guardado". -->
+  <div id="health-storage" data-tab-panel="health-storage" role="tabpanel" aria-labelledby="tab-health-storage" class="u-flex u-flex-col u-gap-md" hidden style="display: none;">
+    <%- include('frontend/components/card/ui', {
+      title: 'Almacenamiento en disco',
+      subtitle: 'Tamaño ocupado por las bases de datos y los backups locales.',
+      body: `
+        <div class="l-stat-grid">
+          ${stat('platform.db', fmtBytes(st.platformDb?.bytes || 0))}
+          ${stat('Tenants (data/tenants/)', fmtBytes(st.tenantDbs?.bytes || 0), `${st.tenantDbs?.count ?? 0} archivos`)}
+          ${stat('Backups', fmtBytes(st.backups?.bytes || 0), `${st.backups?.count ?? 0} archivos`)}
+        </div>
+      `,
+      padding: 'md',
+    }) %>
+
+    <%- include('frontend/components/card/ui', {
+      title: 'Plataforma',
+      subtitle: 'Estado agregado de tenants y despliegues.',
+      body: `
+        <div class="l-stat-grid">
+          ${stat('Tenants activos', p.tenants?.active ?? 0)}
+          ${stat('Tenants suspendidos', p.tenants?.suspended ?? 0)}
+          ${stat('Tenants borrados (soft)', p.tenants?.softDeleted ?? 0)}
+          ${stat('Superadmins', p.superadmins ?? 0)}
+          ${stat('Memberships', p.memberships ?? 0)}
+          ${stat('Frontends hospedados', p.frontends?.hosted ?? 0)}
+          ${stat('Frontends externos', p.frontends?.external ?? 0)}
+        </div>
+      `,
+      padding: 'md',
+    }) %>
+  </div>
+
+  <!-- Panel Actividad de jobs — data del worker (platform.db.jobs). Counts por status + feed de
+       los últimos 5 movimientos (completed/failed). -->
+  <div id="health-jobs" data-tab-panel="health-jobs" role="tabpanel" aria-labelledby="tab-health-jobs" class="u-flex u-flex-col u-gap-md" hidden style="display: none;">
+    <%- include('frontend/components/card/ui', {
+      title: 'Cola de jobs',
+      subtitle: 'Snapshot de la cola del worker (tabla `jobs` de platform.db).',
+      body: `
+        <div class="l-stat-grid">
+          ${stat('Pendientes', j.byStatus?.pending ?? 0)}
+          ${stat('En proceso', j.byStatus?.processing ?? 0)}
+          ${stat('Completados', j.byStatus?.completed ?? 0)}
+          ${stat('Fallados', j.byStatus?.failed ?? 0)}
+        </div>
+      `,
+      padding: 'md',
+    }) %>
+
+    <%
+      const jobsFeed = (j.recent || []).length
+        ? `<ul class="l-jobs-feed">${
+            j.recent.map((r) => `
+              <li class="l-jobs-feed__item" data-status="${escHtml(r.status)}">
+                <span class="l-jobs-feed__badge">${escHtml(r.status)}</span>
+                <div class="l-jobs-feed__body">
+                  <div class="l-jobs-feed__title"><code>${escHtml(r.type)}</code>${r.tenantId ? ` · tenant <code>${escHtml(r.tenantId)}</code>` : ''}</div>
+                  <div class="l-jobs-feed__meta u-text-muted u-text-sm">hace ${fmtAgo(r.updatedAt)} · ${r.attempts} intento${r.attempts === 1 ? '' : 's'}${r.lastError ? ` · ${escHtml(r.lastError)}` : ''}</div>
+                </div>
+              </li>
+            `).join('')
+          }</ul>`
+        : '<p class="u-text-muted u-m-0">Sin movimientos recientes del worker.</p>';
+    %>
+
+    <%- include('frontend/components/card/ui', {
+      title: 'Últimos 5 movimientos',
+      subtitle: 'Ordenados por más recientes. Sólo `completed` y `failed`.',
+      body: jobsFeed,
+      padding: 'md',
+    }) %>
+  </div>
+</div>
+
+<style>
+  .l-stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--space-md); }
+  .l-stat { padding: var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+  .l-stat__label { font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: var(--space-xs); }
+  .l-stat__value { font-size: var(--font-size-xl); font-weight: 600; }
+  .l-stat__sub { margin-top: var(--space-xs); }
+
+  .l-jobs-feed { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-sm); }
+  .l-jobs-feed__item { display: flex; gap: var(--space-md); padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+  .l-jobs-feed__badge { flex-shrink: 0; font-size: var(--font-size-xs); font-weight: 600; padding: 2px 8px; border-radius: var(--radius-sm); background: var(--color-surface-raised); color: var(--color-text-muted); text-transform: uppercase; align-self: flex-start; }
+  .l-jobs-feed__item[data-status="failed"] .l-jobs-feed__badge { background: var(--color-error, #fee); color: var(--color-error-strong, #a00); }
+  .l-jobs-feed__item[data-status="completed"] .l-jobs-feed__badge { background: var(--color-success, #efe); color: var(--color-success-strong, #060); }
+  .l-jobs-feed__body { flex: 1; min-width: 0; }
+  .l-jobs-feed__title { font-size: var(--font-size-sm); }
+  .l-jobs-feed__meta { margin-top: 2px; }
+</style>

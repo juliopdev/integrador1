@@ -1,0 +1,234 @@
+@use 'sass:meta';
+
+@mixin styles {
+  .c-card {
+    background-color: var(--color-surface);
+    backdrop-filter: var(--backdrop-filter);
+    -webkit-backdrop-filter: var(--backdrop-filter);
+    border: var(--border-thin) solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    color: var(--color-text);
+    display: flex;
+    flex-direction: column;
+    // overflow: hidden;
+    position: relative;
+
+    // Control de paddings por zonas para permitir elementos full-width (media, footer)
+    &--p-none {
+      .c-card__header { padding: 0; }
+      .c-card__body { padding: 0; }
+    }
+    &--p-md {
+      .c-card__header { padding: var(--space-4) var(--space-4) var(--space-3); }
+      .c-card__body { padding: var(--space-4); }
+      .c-card__header + .c-card__body { padding-top: 0; }
+      .c-card__media + .c-card__header { padding-top: var(--space-4); }
+      .c-card__media + .c-card__body { padding-top: var(--space-4); }
+    }
+    &--p-lg {
+      .c-card__header { padding: var(--space-6) var(--space-6) var(--space-4); }
+      .c-card__body { padding: var(--space-6); }
+      .c-card__header + .c-card__body { padding-top: 0; }
+      .c-card__media + .c-card__header { padding-top: var(--space-6); }
+      .c-card__media + .c-card__body { padding-top: var(--space-6); }
+    }
+
+    &--has-divider {
+      .c-card__header {
+        border-bottom: var(--border-thin) solid var(--color-border);
+        padding-bottom: var(--space-4);
+      }
+      &.c-card--p-md .c-card__header + .c-card__body { padding-top: var(--space-4); }
+      &.c-card--p-lg .c-card__header + .c-card__body { padding-top: var(--space-6); }
+    }
+
+    &--interactive {
+      cursor: pointer;
+      transition: transform var(--duration-fast) var(--easing-standard),
+                  box-shadow var(--duration-fast) var(--easing-standard),
+                  border-color var(--duration-fast) var(--easing-standard);
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--color-border-strong);
+      }
+
+      &:active {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-sm);
+      }
+    }
+
+    // Cabecera multimedia (ej. gradientes, fotos)
+    &__media {
+      width: 100%;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      border-top-left-radius: calc(var(--radius-lg) - var(--border-thin));
+      border-top-right-radius: calc(var(--radius-lg) - var(--border-thin));
+      background: var(--color-primary-bg, var(--color-primary-600));
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    &__media-icon-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-on-primary);
+      svg {
+        width: 36px;
+        height: 36px;
+        stroke-width: 1.5;
+      }
+    }
+
+    // Encabezado
+    &__header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-3);
+    }
+
+    &__header-content {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    &__icon-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-full);
+      background-color: var(--color-primary-50, var(--color-surface-raised));
+      color: var(--color-primary-500, var(--color-primary-600));
+      flex-shrink: 0;
+
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+    }
+
+    &__heading {
+      display: flex;
+      flex-direction: column;
+    }
+
+    &__title {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      line-height: var(--line-height-tight);
+    }
+
+    &__subtitle {
+      margin: var(--space-1) 0 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      line-height: var(--line-height-normal);
+    }
+
+    &__header-actions {
+      flex-shrink: 0;
+    }
+
+    &__body {
+      flex: 1;
+    }
+
+    // Pie de tarjeta
+    &__footer {
+      padding: var(--space-3) var(--space-4);
+      border-top: var(--border-thin) solid var(--color-border);
+      background-color: var(--color-surface-raised);
+      border-bottom-left-radius: inherit;
+      border-bottom-right-radius: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    // Estructuras internas para filas clave-valor
+    &__row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-3) 0;
+      border-bottom: var(--border-thin) solid var(--color-border);
+      font-size: var(--font-size-sm);
+      
+      &:first-child {
+        padding-top: 0;
+      }
+      &:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+    }
+    
+    &__row-label {
+      color: var(--color-text-muted);
+    }
+    
+    &__row-value {
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text);
+    }
+
+    // Estructuras internas para métricas / estadísticas
+    &__stat {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    &__stat-label {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-bold);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+    }
+
+    &__stat-value {
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      line-height: 1;
+      color: var(--color-text);
+    }
+
+    &__stat-trend {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      
+      &--up {
+        color: var(--color-success);
+      }
+      &--down {
+        color: var(--color-error);
+      }
+    }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

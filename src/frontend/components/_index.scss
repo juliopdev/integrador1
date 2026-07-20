@@ -1,0 +1,45 @@
+// Registro de componentes: reexpone la `ui()` de cada componente como `<name>-ui()` para que los
+// puntos de compilación hagan `@use '../components' as c;` y `theme.subscribe(c.button-ui(), …)`.
+// Solo se emite el CSS de los componentes realmente suscritos (CSS mínimo). Ver scss.md.
+
+@forward 'button/ui' as button-*;
+@forward 'icon/ui' as icon-*;
+@forward 'checkbox/ui' as checkbox-*;
+@forward 'card/ui' as card-*;
+@forward 'badge/ui' as badge-*;
+@forward 'alert/ui' as alert-*;
+@forward 'spinner/ui' as spinner-*;
+@forward 'empty-state/ui' as empty-state-*;
+@forward 'input/ui' as input-*;
+@forward 'modal/ui' as modal-*;
+@forward 'toast/ui' as toast-*;
+@forward 'form/ui' as form-*;
+@forward 'data-table/ui' as data-table-*;
+@forward 'stat/ui' as stat-*;
+@forward 'breadcrumbs/ui' as breadcrumbs-*;
+@forward 'stepper/ui' as stepper-*;
+@forward 'theme-settings/ui' as theme-settings-*;
+@forward 'page-header/ui' as page-header-*;
+@forward 'sidebar/ui' as sidebar-*;
+@forward 'user-pill/ui' as user-pill-*;
+@forward 'textarea/ui' as textarea-*;
+@forward 'select/ui' as select-*;
+@forward 'radio-group/ui' as radio-group-*;
+@forward 'search-input/ui' as search-input-*;
+@forward 'tabs/ui' as tabs-*;
+@forward 'pagination/ui' as pagination-*;
+@forward 'progress/ui' as progress-*;
+@forward 'confirm-dialog/ui' as confirm-dialog-*;
+@forward 'tooltip/ui' as tooltip-*;
+@forward 'file-upload/ui' as file-upload-*;
+@forward 'dropdown-menu/ui' as dropdown-menu-*;
+@forward 'context-menu/ui' as context-menu-*;
+@forward 'copy-button/ui' as copy-button-*;
+@forward 'activity-feed/ui' as activity-feed-*;
+@forward 'code-block/ui' as code-block-*;
+@forward 'terminal/ui' as terminal-*;
+@forward 'chart/ui' as chart-*;
+@forward 'dynamic-table/ui' as dynamic-table-*;
+@forward 'dynamic-form/ui' as dynamic-form-*;
+@forward 'schema-designer/ui' as schema-designer-*;
+@forward 'chat-box/ui' as chat-box-*;

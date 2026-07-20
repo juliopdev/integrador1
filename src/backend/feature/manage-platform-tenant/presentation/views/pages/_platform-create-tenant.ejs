@@ -1,0 +1,21 @@
+<%# Chrome full-width (breadcrumbs + header alineados como en los listados); solo el card se centra. %>
+<div class="u-flex u-flex-col u-gap-md">
+  <div>
+    <%- include('frontend/components/breadcrumbs/ui', {
+    currentPath: locals.currentPath,
+      items: [
+        { label: 'Inicio', href: '/dashboard' },
+        { label: 'Tenants', href: '/dashboard/tenants' },
+        { label: 'Nuevo' },
+      ],
+    }) %>
+    <%- include('frontend/components/page-header/ui', {
+      title: 'Aprovisionar nuevo tenant',
+      subtitle: 'Reserva un subdominio y registra la cuenta del Master principal.',
+    }) %>
+  </div>
+
+  <div class="l-tenant-form u-w-full">
+    <%- include('backend/feature/manage-platform-tenant/presentation/views/sections/_form-create-tenant', locals) %>
+  </div>
+</div>

@@ -1,0 +1,205 @@
+<%
+  // Sección reutilizable (views.md §2-§5): listado de frontends por tenant.
+  // Columnas: Tenant (projectName + subdominio) · Modo · Acciones (Visitar + Configurar).
+  // La antigua columna "Estado" se quitó (siempre 'active' cuando hay deploy → redundante con
+  // "Modo"), y "URL externa" se fusionó con Acciones vía el botón "Visitar".
+  const deploys = locals.deploys || [];
+  const hostSuffix = locals.tenantHostSuffix || 'localhost';
+  // `escHtml` y `tenantCell` vienen del defaultContext (common/views/helpers.js).
+
+  const modeBadge = (mode) => {
+    if (!mode) return include('frontend/components/badge/ui', { variant: 'muted', label: 'Sin configurar' });
+    if (mode === 'external') return include('frontend/components/badge/ui', { variant: 'info', label: 'Externo' });
+    return include('frontend/components/badge/ui', { variant: 'success', label: 'Hospedado' });
+  };
+
+  // URL pública del front, según el modo: externo → su URL absoluta; hospedado → el subdominio
+  // (protocolo-relativo para servir en http dev / https prod). Sin deploy no hay nada que visitar.
+  const visitUrlOf = (row) => {
+    if (!row.deploy) return null;
+    if (row.deploy.mode === 'external') return row.deploy.externalUrl || null;
+    return `//${row.subdomain}.${hostSuffix}`;
+  };
+
+  const tableHtml = include('frontend/components/data-table/ui', {
+    columns: [
+      { key: 'tenant', label: 'Tenant' },
+      { key: 'mode', label: 'Modo' },
+      { key: 'actions', label: 'Acciones', align: 'right' },
+    ],
+    rows: deploys.map((row) => {
+      const visitUrl = visitUrlOf(row);
+      const visitBtn = visitUrl
+        ? `<a class="c-button c-button--ghost c-button--sm" href="${escHtml(visitUrl)}" target="_blank" rel="noopener noreferrer"><span class="c-button__label">Visitar</span></a>`
+        : '';
+      const configureBtn = include('frontend/components/button/ui', {
+        label: 'Configurar',
+        icon: 'cog',
+        href: `/dashboard/frontends/${escHtml(row.tenantId)}`,
+        variant: 'ghost',
+        size: 'sm',
+      });
+      return {
+        tenant: tenantCell({ projectName: row.projectName || row.subdomain, subdomain: row.subdomain, hostSuffix }),
+        mode: modeBadge(row.deploy?.mode),
+        actions: `<div class="u-flex u-gap-xs u-justify-end">${visitBtn}${configureBtn}</div>`,
+      };
+    }),
+    emptyState: {
+      title: 'Aún no hay tenants aprovisionados',
+      message: 'Aprovisiona un tenant para poder configurar su frontend.',
+      cta: {
+        label: 'Aprovisionar tenant',
+        icon: 'plus',
+        href: '/dashboard/tenants/create',
+      },
+    },
+  });
+
+  const searchHtml = include('frontend/components/search-input/ui', {
+    name: 'query',
+    placeholder: 'Buscar frontends...',
+    id: 'table-search-input',
+  });
+
+  const paginationHtml = include('frontend/components/pagination/ui', {
+    currentPage: 1,
+    totalPages: 1,
+  });
+
+  const toolbarHtml = `
+    <div class="l-table-toolbar u-mb-md" style="max-width: 25rem;">
+      ${searchHtml}
+    </div>
+  `;
+%>
+
+<%- include('frontend/components/card/ui', {
+  body: `
+    ${toolbarHtml}
+    ${tableHtml}
+    <div class="u-mt-md" id="table-pagination-container">
+      ${paginationHtml}
+    </div>
+  `,
+  padding: 'md'
+}) %>
+
+<% if (deploys.length > 0) { %>
+  <script>
+    (() => {
+      const initTableFilter = () => {
+        const container = document.getElementById('table-pagination-container');
+        const parent = container ? container.closest('.c-card') : document;
+        const searchInput = parent.querySelector('.c-search-input__field');
+        const clearBtn = parent.querySelector('.c-search-input__clear');
+        const tableRows = Array.from(parent.querySelectorAll('.c-data-table__body .c-data-table__row'));
+        const prevBtn = container ? container.querySelector('.c-pagination__btn:first-of-type') : null;
+        const nextBtn = container ? container.querySelector('.c-pagination__btn:last-of-type') : null;
+        const currentLabel = container ? container.querySelector('.c-pagination__current') : null;
+        const totalLabel = container ? container.querySelector('.c-pagination__total') : null;
+
+        if (tableRows.length === 0) {
+          if (container) container.style.display = 'none';
+          return;
+        }
+
+        let filteredRows = [...tableRows];
+        let currentPage = 1;
+        const itemsPerPage = 5;
+
+        function updateTable() {
+          const totalPages = Math.max(1, Math.ceil(filteredRows.length / itemsPerPage));
+          if (currentPage > totalPages) currentPage = totalPages;
+          if (currentPage < 1) currentPage = 1;
+
+          tableRows.forEach(row => row.style.display = 'none');
+
+          const start = (currentPage - 1) * itemsPerPage;
+          const end = start + itemsPerPage;
+          const pageRows = filteredRows.slice(start, end);
+          pageRows.forEach(row => row.style.display = '');
+
+          if (currentLabel) currentLabel.textContent = currentPage;
+          if (totalLabel) totalLabel.textContent = totalPages;
+
+          if (prevBtn) {
+            if (currentPage === 1) {
+              prevBtn.setAttribute('disabled', 'true');
+            } else {
+              prevBtn.removeAttribute('disabled');
+            }
+          }
+          if (nextBtn) {
+            if (currentPage === totalPages) {
+              nextBtn.setAttribute('disabled', 'true');
+            } else {
+              nextBtn.removeAttribute('disabled');
+            }
+          }
+
+          if (container) {
+            container.style.display = filteredRows.length <= itemsPerPage ? 'none' : '';
+          }
+        }
+
+        function filterTable() {
+          const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+          filteredRows = tableRows.filter(row => {
+            if (query === '') return true;
+            const cells = Array.from(row.querySelectorAll('.c-data-table__cell'));
+            for (let i = 0; i < cells.length - 1; i++) {
+              if (cells[i].textContent.toLowerCase().includes(query)) {
+                return true;
+              }
+            }
+            return false;
+          });
+
+          currentPage = 1;
+          updateTable();
+        }
+
+        if (searchInput) {
+          searchInput.addEventListener('input', filterTable);
+        }
+
+        if (clearBtn) {
+          clearBtn.addEventListener('click', () => {
+            setTimeout(() => {
+              filterTable();
+            }, 0);
+          });
+        }
+
+        if (prevBtn) {
+          prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+              currentPage--;
+              updateTable();
+            }
+          });
+        }
+
+        if (nextBtn) {
+          nextBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+            if (currentPage < totalPages) {
+              currentPage++;
+              updateTable();
+            }
+          });
+        }
+
+        updateTable();
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTableFilter);
+      } else {
+        initTableFilter();
+      }
+    })();
+  </script>
+<% } %>

@@ -1,0 +1,41 @@
+<%
+  // Página delgada: orquesta el header + filtros + grid + paginador. Todo el markup real en sections.
+  const assets = locals.assets || [];
+  const pageMeta = locals.pageMeta || { page: 1, totalPages: 0, hasNext: false, hasPrev: false, total: 0 };
+  const activeProvider = locals.activeProvider || null;
+  const activeType = locals.activeType || null;
+%>
+<div class="l-gallery u-flex u-flex-col u-gap-md">
+  <%- include('frontend/components/breadcrumbs/ui', {
+    currentPath: locals.currentPath,
+    items: [
+      { label: 'Inicio', href: '/dashboard' },
+      { label: 'Biblioteca de medios' },
+    ],
+  }) %>
+
+  <%- include('frontend/components/page-header/ui', {
+    title: 'Biblioteca de medios',
+    subtitle: pageMeta.total === 0
+      ? 'Aún no hay archivos. Se registran automáticamente cuando tus usuarios suben imágenes o documentos.'
+      : `${pageMeta.total} archivo(s) en total.`,
+  }) %>
+
+  <%- include('backend/feature/manage-tenant-gallery/presentation/views/sections/_asset-filters', {
+    activeProvider,
+    activeType,
+  }) %>
+
+  <% if (assets.length === 0) { %>
+    <%- include('backend/feature/manage-tenant-gallery/presentation/views/sections/_empty-state', {
+      hasFilters: Boolean(activeProvider || activeType),
+    }) %>
+  <% } else { %>
+    <%- include('backend/feature/manage-tenant-gallery/presentation/views/sections/_asset-grid', {
+      assets,
+      pageMeta,
+      activeProvider,
+      activeType,
+    }) %>
+  <% } %>
+</div>

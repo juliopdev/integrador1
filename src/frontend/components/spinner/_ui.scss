@@ -1,0 +1,20 @@
+@use 'sass:meta';
+
+// Animación FUNCIONAL (giro): keyframe `spin` compartido (igual en todos los temas). Ver scss.md.
+@mixin styles {
+  .c-spinner {
+    display: inline-block;
+    border: var(--border-thick) solid var(--color-border);
+    border-top-color: var(--color-primary-600);
+    border-radius: var(--radius-full);
+    animation: spin var(--duration-slow) var(--easing-linear) infinite;
+
+    &--sm { width: var(--space-4); height: var(--space-4); }
+    &--md { width: var(--space-6); height: var(--space-6); }
+    &--lg { width: var(--space-8); height: var(--space-8); }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

@@ -1,0 +1,62 @@
+<%
+  // Sección transversal (views.md §5): FAB de contacto directo con el Superadmin del BaaS.
+  // Vive en common/ porque no pertenece a ningún feature — pero sí conoce el DOMINIO del proyecto
+  // (soporte al operador de tenant, prefill con user + tenant, canales email/whatsapp).
+  //
+  // Historia: era un componente `support-fab` (2026-07 refactor). Al re-clasificarlo como sección
+  // se le quitó su `_ui.scss` propio — la regla es "si tiene SCSS es un componente". Ahora la
+  // sección compone `button variant=fab` + `card interactive` + utilidades. Cero clases propias,
+  // cero estilos inline.
+  //
+  //   email       string? — SUPPORT_EMAIL
+  //   whatsapp    string? — SUPPORT_WHATSAPP (formato wa.me: número sin `+` ni espacios)
+  //   userEmail   string  — email del user logueado (para prefill del mailto/wa)
+  //   tenantSlug  string? — subdomain del tenant (para prefill del mensaje)
+  //
+  // Si ambos canales están vacíos, la sección NO se renderiza (el layout lo decide antes de include).
+  const email = locals.email || '';
+  const whatsapp = locals.whatsapp || '';
+  const userEmail = locals.userEmail || '';
+  const tenantSlug = locals.tenantSlug || '';
+
+  const subject = `Soporte técnico${tenantSlug ? ` [${tenantSlug}]` : ''}`;
+  const body = `Hola, soy ${userEmail}${tenantSlug ? ` del tenant "${tenantSlug}"` : ''} y necesito ayuda con:\n\n`;
+
+  const enc = (s) => encodeURIComponent(String(s ?? ''));
+  const mailHref = email ? `mailto:${enc(email)}?subject=${enc(subject)}&body=${enc(body)}` : '';
+  const waHref = whatsapp ? `https://wa.me/${enc(whatsapp)}?text=${enc(body.replace(/\n\n/g, ' '))}` : '';
+
+  const optionTile = ({ href, target, rel, icon, title, hint }) => `
+    <a href="${href}" class="u-block u-link"${target ? ` target="${target}"` : ''}${rel ? ` rel="${rel}"` : ''}>
+      ${include('frontend/components/card/ui', {
+        icon,
+        title,
+        subtitle: hint,
+        interactive: true,
+        padding: 'md',
+      })}
+    </a>
+  `;
+
+  const modalBody = `
+    <p class="u-text-muted u-text-sm u-mb-sm">Escribinos por el canal que prefieras. Te respondemos lo antes posible.</p>
+    <div class="u-flex u-flex-col u-gap-sm u-mt-md">
+      ${mailHref ? optionTile({ href: mailHref, icon: 'send', title: 'Email', hint: email }) : ''}
+      ${waHref ? optionTile({ href: waHref, target: '_blank', rel: 'noopener noreferrer', icon: 'chat', title: 'WhatsApp', hint: `+${whatsapp}` }) : ''}
+    </div>
+  `;
+%>
+<%- include('frontend/components/button/ui', {
+  variant: 'fab',
+  icon: 'chat',
+  action: 'modal:open',
+  target: 'support-fab-modal',
+  ariaLabel: 'Contactar al soporte técnico',
+}) %>
+
+<%- include('frontend/components/modal/ui', {
+  id: 'support-fab-modal',
+  title: 'Contactar al soporte técnico',
+  size: 'md',
+  body: modalBody,
+}) %>

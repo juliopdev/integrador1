@@ -1,0 +1,34 @@
+<%
+  // user-pill: trigger para el dropdown de sesión. Vive en el footer del sidebar y reemplaza al
+  // header topbar removido en Iter 52. Muestra avatar + email + chevron; el click lo captura el
+  // `DropdownMenu` de destino vía `data-target`, por lo que el pill NO necesita comportamiento
+  // propio (sin `ui.js`). Cuando el sidebar está colapsado, sólo se muestra el avatar (CSS lo
+  // maneja con `.c-sidebar[data-collapsed] .c-user-pill__meta { display: none; }`).
+  //
+  //   email        string  — correo del usuario logueado
+  //   avatarText   string  — 2 letras que se muestran en el círculo (default: primeras 2 del email)
+  //   targetMenu   string  — id del `dropdown-menu` que se abre al hacer click
+  //   roleLabel    string? — 'Superadmin'/'Master'/'Staff' (para tooltip; no se renderiza inline)
+  const email = locals.email || '';
+  const avatarText = (locals.avatarText || email.slice(0, 2)).toUpperCase();
+  const targetMenu = locals.targetMenu || 'user-menu';
+  const roleLabel = locals.roleLabel || '';
+%>
+<button
+  type="button"
+  class="c-user-pill"
+  data-target="<%= targetMenu %>"
+  aria-haspopup="true"
+  aria-expanded="false"
+  aria-label="Sesión de <%= email %><%= roleLabel ? ` (${roleLabel})` : '' %>"
+  title="<%= email %><%= roleLabel ? ` · ${roleLabel}` : '' %>"
+>
+  <span class="c-user-pill__avatar" aria-hidden="true"><%= avatarText %></span>
+  <span class="c-user-pill__meta">
+    <span class="c-user-pill__email"><%= email %></span>
+    <% if (roleLabel) { %><span class="c-user-pill__role"><%= roleLabel %></span><% } %>
+  </span>
+  <span class="c-user-pill__chevron" aria-hidden="true">
+    <%- include('frontend/components/icon/ui', { name: 'chevron-up', size: 'sm' }) %>
+  </span>
+</button>

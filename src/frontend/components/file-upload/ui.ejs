@@ -1,0 +1,28 @@
+<%
+  const name = locals.name || 'file';
+  const label = locals.label || 'Arrastre y suelte su archivo aquí o haga click para seleccionar';
+  const accept = locals.accept || '*';
+  const multiple = locals.multiple || false;
+  const disabled = locals.disabled || false;
+  const maxSize = locals.maxSize || 5; // default 5MB
+%>
+<div class="c-file-upload" data-disabled="<%= disabled %>" data-max-size="<%= maxSize %>">
+  <label class="c-file-upload__dropzone">
+    <input
+      type="file"
+      class="c-file-upload__input"
+      name="<%= name %>"
+      accept="<%= accept %>"
+      <% if (multiple) { %>multiple<% } %>
+      <% if (disabled) { %>disabled<% } %>
+    />
+    <div class="c-file-upload__content">
+      <span class="c-file-upload__icon">
+        <%- include('frontend/components/icon/ui', { name: 'send', size: 'lg' }) %>
+      </span>
+      <span class="c-file-upload__text"><%= label %></span>
+      <span class="c-file-upload__meta">Máximo <%= maxSize %> MB por archivo</span>
+    </div>
+  </label>
+  <div class="c-file-upload__list"></div>
+</div>

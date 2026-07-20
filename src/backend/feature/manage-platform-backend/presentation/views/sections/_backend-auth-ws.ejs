@@ -1,0 +1,47 @@
+<%
+  // Sección: auth de Users + canales WebSocket. Read-only. Ambos comparten card para no fragmentar.
+  const d = locals.detail;
+  const auth = d.schema?.auth || { userAuthEnabled: false, strategies: [], redirectUris: [] };
+  const channels = d.schema?.websocket?.channels || [];
+
+  const strategyBadges = (auth.strategies || []).length
+    ? (auth.strategies || []).map((s) => include('frontend/components/badge/ui', { variant: 'success', label: s })).join(' ')
+    : '<span class="u-text-muted u-text-sm">Sin estrategias.</span>';
+
+  const redirectUrisHtml = (auth.redirectUris || []).length
+    ? (auth.redirectUris || []).map((u) => `<code class="u-text-xs">${u.replace(/</g, '&lt;')}</code>`).join('<br />')
+    : '<span class="u-text-muted u-text-xs">Sin redirect URIs.</span>';
+
+  const channelBadges = channels.length
+    ? channels.map((c) => include('frontend/components/badge/ui', { variant: 'success', label: c })).join(' ')
+    : '<span class="u-text-muted u-text-sm">Ningún canal habilitado.</span>';
+
+  const body = `
+    <div class="backend-authws">
+      <div>
+        <div class="u-flex u-items-center u-gap-sm u-mb-sm">
+          <strong class="u-text-sm">Auth de Users</strong>
+          ${include('frontend/components/badge/ui', {
+            variant: auth.userAuthEnabled ? 'success' : 'neutral',
+            label: auth.userAuthEnabled ? 'Habilitada' : 'Deshabilitada',
+          })}
+        </div>
+        <div class="u-mb-sm">
+          <span class="u-text-muted u-text-xs u-block u-mb-xs">Estrategias</span>
+          ${strategyBadges}
+        </div>
+        <div>
+          <span class="u-text-muted u-text-xs u-block u-mb-xs">Redirect URIs</span>
+          ${redirectUrisHtml}
+        </div>
+      </div>
+      <div>
+        <div class="u-mb-sm">
+          <strong class="u-text-sm u-block u-mb-xs">Canales WebSocket</strong>
+          ${channelBadges}
+        </div>
+      </div>
+    </div>
+  `;
+%>
+<%- include('frontend/components/card/ui', { titleHtml: 'Auth & tiempo real', body, padding: 'md' }) %>

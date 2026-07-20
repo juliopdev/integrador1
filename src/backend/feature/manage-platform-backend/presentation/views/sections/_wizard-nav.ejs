@@ -1,0 +1,98 @@
+<%
+  const t = locals.activeTenant || {};
+  const currentStep = locals.currentStep || 'version';
+
+  const stepLabels = {
+    version: 'Versión', provider: 'Proveedores', role: 'Roles',
+    api: 'Resources & endpoints', data: 'Data', ws: 'WebSocket', finish: 'Compilar y deploy',
+  };
+
+  const STEP_ORDER = ['version', 'provider', 'role', 'api', 'data', 'ws', 'finish'];
+  const stepIdx = STEP_ORDER.indexOf(currentStep);
+  const prevStep = stepIdx > 0 ? STEP_ORDER[stepIdx - 1] : null;
+  const nextStep = stepIdx >= 0 && stepIdx < STEP_ORDER.length - 1 ? STEP_ORDER[stepIdx + 1] : null;
+
+  const wState = locals.wizardState || {};
+  const wsChannelCount = ((wState.draftContract?.schema?.websocket?.channels) || []).length
+    + ((wState.publishedContract?.schema?.websocket?.channels) || []).length;
+  const stepHasData = {
+    role: (wState.roles || []).length > 0,
+    ws: wsChannelCount > 0,
+  };
+  const SKIPPABLE = new Set(['role', 'ws']);
+  const canSkip = SKIPPABLE.has(currentStep) && nextStep && !stepHasData[currentStep];
+  const hasDraft = Boolean(wState.draftContract);
+
+  // Iter UX: en el Paso 1 (Versión), cada card decide la continuación (Editar/Upgrade arranca
+  // draft y navega a `provider`; Activar del historial redirige al listado tras el POST). Un
+  // botón "Siguiente →" acá compite con esas decisiones y confunde el flujo — se oculta.
+  const showNextCta = nextStep && currentStep !== 'version';
+%>
+
+<nav class="wizard-nav" aria-label="Navegación del asistente">
+  <% if (prevStep) { %>
+    <%- include('frontend/components/button/ui', {
+      label: `← ${stepLabels[prevStep]}`,
+      href: `/dashboard/backends/${t.id}?step=${prevStep}`,
+      variant: 'ghost',
+      size: 'sm',
+    }) %>
+  <% } else { %>
+    <span class="l-wizard-nav__spacer"></span>
+  <% } %>
+
+  <div class="l-wizard-nav__actions">
+    <% if (hasDraft) { %>
+      <%- include('frontend/components/button/ui', {
+        label: 'Reiniciar',
+        icon: 'trash',
+        variant: 'ghost',
+        size: 'sm',
+        action: 'modal:open',
+        target: 'confirm-reset-draft',
+      }) %>
+    <% } %>
+    <% if (canSkip) { %>
+      <%- include('frontend/components/button/ui', {
+        label: 'Omitir paso',
+        href: `/dashboard/backends/${t.id}?step=${nextStep}`,
+        variant: 'ghost',
+        size: 'sm',
+      }) %>
+    <% } %>
+    <% if (showNextCta) { %>
+      <%- include('frontend/components/button/ui', {
+        label: `${stepLabels[nextStep]} →`,
+        href: `/dashboard/backends/${t.id}?step=${nextStep}`,
+        variant: 'primary',
+        size: 'sm',
+      }) %>
+    <% } %>
+  </div>
+</nav>
+
+<%# P1.3: confirmación de reinicio — borra el draft completo (DELETE idempotente de Iter 32). %>
+<% if (hasDraft) { %>
+  <%- include('frontend/components/modal/ui', {
+    id: 'confirm-reset-draft',
+    title: 'Reiniciar composición',
+    body: `
+      <p class="u-m-0">
+        Se descartará el borrador en curso de <strong>${t.subdomain}</strong> con todos sus
+        cambios (resources, campos, endpoints, auth y canales). El contrato publicado no se toca.
+      </p>
+    `,
+    footer: `
+      ${include('frontend/components/button/ui', {
+        label: 'Cancelar',
+        variant: 'ghost',
+        size: 'sm',
+        action: 'modal:close',
+        target: 'confirm-reset-draft',
+      })}
+      <form class="c-form" method="post" action="/api-system/v1/tenants/${t.id}/backend/draft" data-method="delete" data-redirect="/dashboard/backends/${t.id}?step=start">
+        ${include('frontend/components/button/ui', { type: 'submit', variant: 'danger', size: 'sm', label: 'Reiniciar draft', icon: 'trash' })}
+      </form>
+    `,
+  }) %>
+<% } %>

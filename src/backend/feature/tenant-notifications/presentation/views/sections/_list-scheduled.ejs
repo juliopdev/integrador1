@@ -1,0 +1,51 @@
+<%
+  const scheduled = locals.scheduled || [];
+
+  const fmtDate = (ms) => new Date(ms).toLocaleString('es-PE', {
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+  });
+
+  const escHtml = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  const cancelBtn = (id) => `
+    <form class="c-form" method="post" action="/api-system/v1/notifications/scheduled/${id}" data-method="delete" data-redirect="/dashboard/notifications" data-confirm="¿Cancelar este aviso programado?">
+      ${include('frontend/components/button/ui', { type: 'submit', variant: 'ghost', size: 'sm', label: 'Cancelar aviso' })}
+    </form>
+  `;
+
+  // Iter UX B1: "Audiencia" → "Enviado a", `authenticated` → texto amigable.
+  const audienceLabel = (aud) => {
+    if (aud === 'public') return 'Todos los clientes';
+    if (aud === 'authenticated') return 'Sólo registrados';
+    return aud;
+  };
+
+  const columns = [
+    { key: 'title', label: 'Título' },
+    { key: 'audience', label: 'Enviado a' },
+    { key: 'scheduledAt', label: 'Se envía el' },
+    { key: 'actions', label: 'Acciones', align: 'right' },
+  ];
+  const rows = scheduled.map((n) => ({
+    title: `<strong>${escHtml(n.title)}</strong>`,
+    audience: `<span class="c-badge">${escHtml(audienceLabel(n.audience))}</span>`,
+    scheduledAt: fmtDate(n.scheduledAt),
+    actions: cancelBtn(n.id),
+  }));
+
+  const tableHtml = include('frontend/components/data-table/ui', {
+    columns,
+    rows,
+    emptyState: {
+      title: 'Sin avisos programados',
+      message: 'Cuando programés un aviso para más adelante, aparecerá acá con la fecha y el botón para cancelarlo.',
+    },
+  });
+%>
+
+<%- include('frontend/components/card/ui', {
+  title: 'Avisos programados',
+  subtitle: `${scheduled.length} pendiente${scheduled.length === 1 ? '' : 's'}`,
+  body: tableHtml,
+  padding: 'md',
+}) %>

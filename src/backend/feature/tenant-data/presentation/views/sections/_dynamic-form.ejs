@@ -1,0 +1,101 @@
+<%
+  // Sección `_dynamic-form` (tenant-data.md): construye inputs a partir de `resource.fields`.
+  // Modo `create` → POST + `data-redirect` al detalle.
+  // Modo `edit`   → PUT (via `data-method`) + prefill con `initialValues`. Reusa el mismo layout.
+  const r = locals.resource;
+  const mode = locals.mode || 'create';
+  const initialValues = locals.initialValues || {};
+  const action = mode === 'create'
+    ? `/api-system/v1/data/${r.name}`
+    : `/api-system/v1/data/${r.name}/${locals.recordId}`;
+  const method = mode === 'create' ? 'post' : 'put';
+  const redirect = `/dashboard/data/${r.name}`;
+
+  // Escape mínimo para atributos HTML (comillas + `<`).
+  const escAttr = (v) => v == null ? '' : String(v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+
+  // Traductor de labels para perfil de negocio
+  const formatLabel = (name) => {
+    let label = name.replace(/_/g, ' ');
+    const lower = label.toLowerCase().trim();
+    if (lower === 'title') return 'Título / Nombre';
+    if (lower === 'description') return 'Descripción';
+    if (lower === 'price') return 'Precio ($)';
+    if (lower === 'stock') return 'Cantidad disponible (Stock)';
+    if (lower === 'image_url' || lower === 'image url') return 'Enlace de la Imagen (URL)';
+    if (lower === 'active') return 'Visible al público / Activo';
+    if (lower === 'name') return 'Nombre';
+    if (lower === 'email') return 'Correo electrónico';
+    if (lower === 'status') return 'Estado';
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  };
+
+  const htmlTypeOf = (t) => {
+    if (t === 'integer' || t === 'float') return 'number';
+    if (t === 'date') return 'date';
+    if (t === 'datetime') return 'datetime-local';
+    if (t === 'boolean') return 'checkbox';
+    return 'text';
+  };
+
+  const inputsHtml = r.fields.map((f) => {
+    const value = initialValues[f.name];
+    const type = htmlTypeOf(f.type);
+    if (f.type === 'boolean') {
+      // Iter UX B3: toggle switch (variant del c-checkbox) en vez del checkbox nativo. Más
+      // legible ("¿Sí o no?") que un cuadradito. El hidden gemelo garantiza `false` cuando el
+      // switch queda apagado — el submit del form tiene ambos campos y el segundo gana.
+      const switchHtml = include('frontend/components/checkbox/ui', {
+        name: f.name,
+        id: `field-${f.name}`,
+        checked: !!value,
+        variant: 'switch',
+        ariaLabel: formatLabel(f.name),
+      });
+      return `
+        <div class="l-dynamic-field l-dynamic-field--switch" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) 0;">
+          <span class="l-dynamic-field__label" style="font-weight: var(--font-weight-medium);">${formatLabel(f.name)}${f.required ? ' *' : ''}</span>
+          <span style="display: inline-flex; align-items: center; gap: var(--space-2);">
+            <input type="hidden" name="${f.name}" value="false" />
+            ${switchHtml}
+          </span>
+        </div>
+      `;
+    }
+    if (f.type === 'text' || f.type === 'json') {
+      const preview = f.type === 'json' && value != null && typeof value === 'object'
+        ? JSON.stringify(value, null, 2)
+        : (value ?? '');
+      const areaClass = f.type === 'json' ? 'l-dynamic-field__textarea l-dynamic-field__textarea--mono' : 'l-dynamic-field__textarea';
+      return `
+        <div class="l-dynamic-field" style="display: flex; flex-direction: column; gap: var(--space-1);">
+          <label class="l-dynamic-field__label" for="field-${f.name}" style="font-weight: var(--font-weight-medium);">${formatLabel(f.name)}${f.required ? ' *' : ''}</label>
+          <textarea class="${areaClass}" id="field-${f.name}" name="${f.name}" rows="4"${f.required ? ' required' : ''} style="width: 100%; padding: var(--space-2); border: var(--border-thin) solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font-family: var(--font-sans); font-size: var(--font-size-sm);">${escAttr(preview)}</textarea>
+        </div>
+      `;
+    }
+    return include('frontend/components/input/ui', {
+      name: f.name,
+      type,
+      label: `${formatLabel(f.name)}${f.required ? ' *' : ''}`,
+      value: value ?? '',
+      required: f.required,
+    });
+  }).join('');
+
+  const formHtml = `
+    <form class="c-form" method="post" action="${action}" data-method="${method}" data-redirect="${redirect}">
+      <div style="display: flex; flex-direction: column; gap: var(--space-4); margin-bottom: var(--space-4);">
+        ${inputsHtml}
+      </div>
+      ${include('frontend/components/button/ui', {
+        type: 'submit',
+        variant: 'primary',
+        label: mode === 'create' ? 'Crear record' : 'Guardar cambios',
+        class: 'u-w-full',
+      })}
+    </form>
+  `;
+%>
+<%- include('frontend/components/card/ui', { body: formHtml, padding: 'lg' }) %>

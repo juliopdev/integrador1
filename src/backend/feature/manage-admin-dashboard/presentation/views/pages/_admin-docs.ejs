@@ -1,0 +1,179 @@
+<%
+  const contract = locals.contract;
+  const hostSuffix = locals.tenantHostSuffix || 'localhost:3000';
+  const baseUrl = locals.tenant ? `//${locals.tenant.subdomain}.${hostSuffix}` : '';
+%>
+<div class="u-flex u-flex-col u-gap-md">
+  <%- include('backend/common/views/sections/_dashboard-page-frame', {
+    breadcrumb: [
+      { label: 'Inicio', href: '/dashboard' },
+      { label: 'Documentación' },
+    ],
+    title: 'Documentación de la API',
+    subtitle: 'Encontrá los endpoints, métodos, esquemas y la forma de integrar tu backend con cualquier frontend.',
+    currentPath: locals.currentPath,
+  }) %>
+
+  <% if (!contract || !contract.schema) { %>
+    <%- include('frontend/components/card/ui', {
+      title: 'Backend no publicado',
+      body: `
+        <p class="u-text-muted u-text-sm u-m-0">
+          Aún no has publicado ninguna versión de tu backend. Componé tus recursos en la sección de
+          <a href="/dashboard" class="u-text-primary">Inicio</a> y publicá una versión para ver la documentación interactiva aquí.
+        </p>
+      `,
+      padding: 'md',
+    }) %>
+  <% } else { %>
+    <%
+      const resources = contract.schema.resources || [];
+      const endpoints = contract.schema.endpoints || [];
+      const version = contract.version;
+    %>
+    
+    <!-- Tarjeta de Información General -->
+    <%- include('frontend/components/card/ui', {
+      title: 'Guía de Integración',
+      body: `
+        <p class="u-text-sm u-mb-md">
+          Tu API está publicada y lista para recibir peticiones HTTP. Podés integrarla en tu aplicación frontend utilizando cualquier cliente HTTP (como Fetch o Axios).
+        </p>
+        <div class="u-flex u-flex-col u-gap-sm">
+          <div>
+            <span class="u-text-muted u-text-xs u-block">URL BASE</span>
+            <code class="u-text-sm u-text-strong">${baseUrl}</code>
+          </div>
+          <div class="u-mt-xs">
+            <span class="u-text-muted u-text-xs u-block">AUTENTICACIÓN</span>
+            <p class="u-text-xs u-m-0 u-text-muted">
+              Para endpoints privados (master/user), enviá el token en la cabecera:
+            </p>
+            <code class="u-text-xs">Authorization: Bearer [TU_API_KEY_O_TOKEN]</code>
+          </div>
+        </div>
+      `,
+      padding: 'md',
+    }) %>
+
+    <!-- Ejemplos de Código -->
+    <%- include('frontend/components/card/ui', {
+      title: 'Ejemplo de Petición (JavaScript Fetch)',
+      body: include('frontend/components/code-block/ui', {
+        language: 'javascript',
+        label: 'FETCH EXAMPLE',
+        code: `// Obtener todos los registros de un recurso
+fetch('${baseUrl}/api/${version}/${resources[0]?.name || 'products'}', {
+  headers: {
+    'Authorization': 'Bearer TU_API_KEY_AQUÍ'
+  }
+})
+  .then(response => response.json())
+  .then(json => console.log(json));`
+      }),
+      padding: 'md',
+    }) %>
+
+    <!-- Lista de Recursos y Endpoints -->
+    <h2 class="u-text-lg u-font-bold u-mt-md">Recursos y Endpoints</h2>
+    
+    <% resources.forEach(r => { %>
+      <%
+        const fields = r.fields || [];
+        const eps = endpoints.filter(e => e.resource === r.name);
+        
+        // Mapear campos a un ejemplo JSON
+        const exampleObj = {};
+        fields.forEach(f => {
+          if (f.name === 'id') return;
+          if (f.type === 'integer' || f.type === 'float') exampleObj[f.name] = 0;
+          else if (f.type === 'boolean') exampleObj[f.name] = true;
+          else if (f.type === 'relation') exampleObj[f.name] = "UUID_RELACION";
+          else exampleObj[f.name] = "string";
+        });
+        const exampleJson = JSON.stringify(exampleObj, null, 2);
+
+        const formatDefault = (f) => {
+          if (f.defaultValue === undefined || f.defaultValue === null || f.defaultValue === '') {
+            return '<span class="u-text-muted">—</span>';
+          }
+          const val = String(f.defaultValue);
+          if (f.type === 'string' || f.type === 'text' || f.type === 'date' || f.type === 'datetime') {
+            return `<code class="u-text-xs">"${val.replace(/"/g, '&quot;')}"</code>`;
+          }
+          return `<code class="u-text-xs">${val.replace(/</g, '&lt;')}</code>`;
+        };
+
+        const fieldsTable = fields.length ? include('frontend/components/data-table/ui', {
+          columns: [
+            { key: 'name', label: 'Campo' },
+            { key: 'type', label: 'Tipo' },
+            { key: 'default', label: 'Default' },
+            { key: 'required', label: 'Requerido' },
+            { key: 'unique', label: 'Único', align: 'right' },
+          ],
+          rows: fields.map(f => ({
+            name: `
+              <code class="u-text-sm u-text-strong">${f.name}</code>
+              ${f.description ? `<div class="u-text-xs u-text-muted u-mt-xs">${f.description.replace(/</g, '&lt;')}</div>` : ''}
+              ${f.type === 'relation' && f.target ? `<div class="u-text-xs u-text-muted u-mt-xs">↳ Relación: <code>${f.target}</code></div>` : ''}
+              ${f.type === 'asset' && f.provider ? `<div class="u-text-xs u-text-muted u-mt-xs">↳ Proveedor: <code>${f.provider}</code></div>` : ''}
+            `,
+            type: include('frontend/components/badge/ui', { variant: 'neutral', label: f.type }),
+            default: formatDefault(f),
+            required: f.required
+              ? include('frontend/components/badge/ui', { variant: 'success', label: 'Sí' })
+              : `<span class="u-text-muted">No</span>`,
+            unique: f.unique
+              ? include('frontend/components/badge/ui', { variant: 'info', label: 'Sí' })
+              : `<span class="u-text-muted">No</span>`,
+          })),
+          emptyState: null,
+        }) : '<p class="u-text-muted u-text-sm u-m-0">Sin campos.</p>';
+
+        const methodBadge = (e, m) => {
+          const audiences = e.access?.[m];
+          if (!audiences) return include('frontend/components/badge/ui', { variant: 'neutral', label: `${m} · público` });
+          const label = `${m} · ${audiences.join(', ')}`;
+          const variant = audiences.includes('user') ? 'info' : 'warning';
+          return include('frontend/components/badge/ui', { variant, label });
+        };
+
+        const endpointsHtml = eps.length
+          ? eps.map(e => `
+              <div class="endpoint-line u-mb-xs u-py-xs u-border-bottom" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2);">
+                <code class="u-text-xs u-text-strong">/api/${version}${e.path}</code>
+                <span class="l-endpoint-line__methods" style="display: flex; gap: var(--space-1);">${e.methods.map(m => methodBadge(e, m)).join(' ')}</span>
+              </div>
+            `).join('')
+          : '<span class="u-text-muted u-text-xs">Sin endpoints públicos.</span>';
+
+        const cardBody = `
+          <div class="u-flex u-flex-col u-gap-md">
+            <div>
+              <span class="u-text-muted u-text-xs u-block u-mb-xs">Esquema del Recurso</span>
+              ${fieldsTable}
+            </div>
+            <div>
+              <span class="u-text-muted u-text-xs u-block u-mb-xs">Rutas Disponibles</span>
+              ${endpointsHtml}
+            </div>
+            ${fields.length > 0 ? `
+              <div>
+                <span class="u-text-muted u-text-xs u-block u-mb-xs">Estructura del Payload</span>
+                ${include('frontend/components/code-block/ui', { language: 'json', label: 'JSON PAYLOAD', code: exampleJson })}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      %>
+
+      <%- include('frontend/components/card/ui', {
+        titleHtml: `<code>${r.name}</code> <span class="u-text-muted u-text-xs u-font-normal">· ${r.physicalName} · ${r.store}</span>`,
+        headerActions: include('frontend/components/badge/ui', { variant: r.store === 'sql' ? 'success' : 'neutral', label: r.store === 'sql' ? 'Postgres' : 'Mongo' }),
+        body: cardBody,
+        padding: 'md',
+      }) %>
+    <% }); %>
+  <% } %>
+</div>

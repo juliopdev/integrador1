@@ -1,0 +1,57 @@
+@use 'sass:meta';
+
+// page-header: encabezado de página (título + subtítulo + acciones). Solo tokens (scss.md §3–4).
+// Iter 2026-07: variant `--hero` absorbe el ex `.l-home__hero` del feature dashboard, para que
+// el pattern "landing con background y padding" viva en el componente en vez de duplicarse.
+@mixin styles {
+  .c-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+
+    &__title {
+      margin: 0 0 var(--space-1) 0;
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text);
+    }
+
+    &__subtitle {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+    }
+
+    &__actions {
+      flex-shrink: 0;
+    }
+
+    // Variante hero: para la landing del dashboard (home). Título más grande (h1 + xl),
+    // padding interno + gradiente sutil + borde y sombra que lo destacan como bienvenida.
+    // Los estilos del `text` y `actions` se heredan del bloque base.
+    &--hero {
+      align-items: center;
+      padding: var(--space-5) var(--space-6);
+      background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-surface) 100%);
+      backdrop-filter: var(--backdrop-filter);
+      border: var(--border-thin) solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      flex-wrap: wrap;
+
+      .c-page-header__title {
+        font-size: var(--font-size-xl);
+      }
+      .c-page-header__text {
+        flex: 1;
+        min-width: 16rem;
+      }
+    }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

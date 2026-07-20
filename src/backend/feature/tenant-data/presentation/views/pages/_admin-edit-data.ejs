@@ -1,0 +1,50 @@
+<%
+  // Página delgada (views.md): edición de un record. Compone el `_dynamic-form` en modo `edit`
+  // con `initialValues` derivados del record y añade un mini-form de borrado lógico como sección
+  // separada.
+  const r = locals.resource;
+  const rec = locals.record;
+%>
+<div class="l-data-form u-flex u-flex-col u-gap-md">
+  <%- include('frontend/components/breadcrumbs/ui', {
+    currentPath: locals.currentPath,
+    items: [
+      { label: 'Dashboard', href: '/dashboard' },
+      { label: 'Datos', href: '/dashboard/data' },
+      { label: r.name, href: `/dashboard/data/${r.name}` },
+      { label: `Editar · ${rec.id}` },
+    ],
+  }) %>
+  <%- include('frontend/components/page-header/ui', {
+    titleHtml: `Editar <code>${r.name}</code> <span class="u-text-muted u-text-sm u-font-normal">· id <code>${rec.id}</code></span>`,
+  }) %>
+
+  <%- include('backend/feature/tenant-data/presentation/views/sections/_dynamic-form', {
+    resource: r,
+    mode: 'edit',
+    recordId: rec.id,
+    initialValues: rec,
+  }) %>
+
+  <%
+    // Mini-form de borrado lógico. El botón (dentro de un `c-form` con `data-method="delete"`) va
+    // en el slot `headerActions` del card; el título usa `u-text-danger` para señalar el riesgo.
+    const deleteForm = `
+      <form class="c-form" method="post" action="/api-system/v1/data/${r.name}/${rec.id}" data-method="delete" data-redirect="/dashboard/data/${r.name}">
+        ${include('frontend/components/button/ui', {
+          type: 'submit',
+          variant: 'ghost',
+          size: 'sm',
+          label: 'Eliminar',
+          icon: 'trash',
+        })}
+      </form>
+    `;
+  %>
+  <%- include('frontend/components/card/ui', {
+    titleHtml: '<span class="u-text-danger">Eliminar record</span>',
+    subtitleHtml: 'Borrado lógico (marca <code>deleted_at</code>). El registro se oculta pero puede recuperarse.',
+    headerActions: deleteForm,
+    padding: 'md',
+  }) %>
+</div>

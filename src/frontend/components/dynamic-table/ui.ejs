@@ -1,0 +1,65 @@
+<%
+  const resource = locals.resource || { name: '', fields: [] };
+  const rows = locals.rows || [];
+  const enableActions = locals.enableActions !== false;
+  const filterPlaceholder = locals.filterPlaceholder || 'Filter by name or role...';
+  const showPagination = locals.showPagination !== false;
+
+  const columns = resource.fields.map(f => ({
+    key: f.name,
+    label: f.label || f.name.toUpperCase(),
+    align: (f.type === 'integer' || f.type === 'float') ? 'right' : 'left'
+  }));
+
+  if (enableActions) {
+    columns.push({ key: '_actions', label: '', align: 'right' }); // cabecera vacía para acciones
+  }
+
+  const tableRows = rows.map(r => {
+    const rowObj = {};
+    resource.fields.forEach(f => {
+      const val = r[f.name];
+      if (f.name === 'status' || f.name === 'estado') {
+        const strVal = val !== undefined ? String(val) : '';
+        let variant = 'neutral';
+        const lowerVal = strVal.toLowerCase();
+        if (lowerVal === 'active' || lowerVal === 'activo') variant = 'success';
+        else if (lowerVal === 'away' || lowerVal === 'ausente') variant = 'warning';
+        else if (lowerVal === 'offline' || lowerVal === 'inactivo') variant = 'neutral';
+        rowObj[f.name] = `<span class="c-badge c-badge--${variant}">${strVal}</span>`;
+      } else {
+        rowObj[f.name] = val !== undefined ? String(val) : '';
+      }
+    });
+
+    if (enableActions) {
+      rowObj['_actions'] = `
+        <button type="button" class="c-button c-button--ghost c-dynamic-table__action-btn" data-action="menu" data-id="${r.id || ''}">
+          <svg class="c-icon c-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+        </button>
+      `;
+    }
+    return rowObj;
+  });
+%>
+<div class="c-dynamic-table" id="dyn-table-<%= resource.name %>" data-resource="<%= resource.name %>">
+  <div class="c-dynamic-table__toolbar">
+    <div class="c-dynamic-table__search-wrapper">
+      <svg class="c-dynamic-table__search-icon c-icon c-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" class="c-dynamic-table__search-input" placeholder="<%= filterPlaceholder %>" />
+    </div>
+    <button type="button" class="c-button c-button--secondary c-dynamic-table__filter-btn" aria-label="Filtrar">
+      <svg class="c-icon c-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+    </button>
+  </div>
+
+  <%- include('frontend/components/data-table/ui', { columns, rows: tableRows }) %>
+
+  <% if (showPagination) { %>
+    <div class="c-dynamic-table__footer">
+      <span class="c-dynamic-table__pagination-info">
+        Showing <%= rows.length %> of <%= rows.length %> entries
+      </span>
+    </div>
+  <% } %>
+</div>

@@ -1,0 +1,5 @@
+<%
+  // Contenedor de toasts: vive una vez en el layout; el JS apila notificaciones creadas vía bus.
+  const id = locals.id || 'toast-stack';
+%>
+<div class="c-toast-stack" id="<%= id %>" aria-live="polite" role="status"></div>

@@ -1,49 +1,136 @@
-/**
- * ES: Estilos BEM para el componente botón.
- */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.6rem 1.2rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: var(--transition-fast);
-  text-decoration: none;
-  font-family: inherit;
+// Estilos encapsulados del button. SOLO tokens (cero literales); contraste vía on-color; motion por
+// token. Se emite bajo demanda vía theme.subscribe(c.button-ui()). Ver scss.md.
+@use 'sass:meta';
 
-  &--primary {
-    background: var(--accent-color);
-    color: #fff;
-    &:hover {
-      background: var(--accent-hover);
+@mixin styles {
+  .c-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border: var(--border-thin) solid transparent;
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-tight);
+    text-decoration: none; // como <a> no debe verse como link
+    // Apariencia por defecto: neutral por tokens; un uso sin variante nunca cae al estilo UA.
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border-color: var(--color-border);
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--easing-standard),
+                color var(--duration-fast) var(--easing-standard),
+                border-color var(--duration-fast) var(--easing-standard),
+                transform var(--duration-fast) var(--easing-emphasized),
+                box-shadow var(--duration-fast) var(--easing-standard);
+
+    &:hover:not(:disabled) {
       transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+    &:active:not(:disabled) {
+      transform: translateY(0) scale(0.98);
+    }
+    &:focus-visible {
+      outline: var(--border-thick) solid var(--color-focus-ring);
+      outline-offset: var(--border-thin);
+    }
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    // Tamaños
+    &--xs { padding: var(--space-1) var(--space-2); font-size: var(--font-size-xs); gap: var(--space-1); border-radius: var(--radius-sm); }
+    &--sm { padding: var(--space-1) var(--space-3); font-size: var(--font-size-sm); }
+    &--md { font-size: var(--font-size-md); }
+    &--lg { padding: var(--space-3) var(--space-6); font-size: var(--font-size-lg); border-radius: var(--radius-lg); }
+
+    // Variantes (fondo + su on-color para el texto)
+    &--primary {
+      background: var(--color-primary-bg, var(--color-primary-600));
+      color: var(--color-on-primary);
+      border-color: transparent;
+      &:hover:not(:disabled) { background: var(--color-primary-bg-hover, var(--color-primary-700)); }
+    }
+    &--secondary {
+      background-color: var(--color-surface-raised);
+      color: var(--color-text);
+      border-color: var(--color-border);
+      &:hover:not(:disabled) {
+        background-color: var(--color-border-strong);
+        border-color: var(--color-border-strong);
+      }
+    }
+    &--success {
+      background-color: var(--color-success);
+      color: var(--color-on-success);
+      border-color: transparent;
+    }
+    &--danger {
+      background-color: var(--color-error);
+      color: var(--color-on-error);
+      border-color: transparent;
+    }
+    &--warning {
+      background-color: var(--color-warning);
+      color: var(--color-on-warning);
+      border-color: transparent;
+    }
+    &--ghost {
+      background-color: transparent;
+      color: var(--color-text);
+      border-color: transparent;
+      &:hover:not(:disabled) { background-color: var(--color-surface-raised); }
+    }
+
+    // FAB (Floating Action Button): botón circular fijo bottom-right. Variante agnóstica de
+    // dominio — cualquier sección (soporte, quick-action, etc.) puede rendearlo. Reemplaza al
+    // ex-componente `support-fab` (2026-07) que era compuesto+dominio-aware; ahora la sección
+    // consume `variant: 'fab'` + `card` + utilidades, sin SCSS propio.
+    &--fab {
+      position: fixed;
+      bottom: var(--space-4);
+      right: var(--space-4);
+      z-index: var(--z-dropdown);
+      width: 3rem;
+      height: 3rem;
+      padding: 0;
+      border-radius: var(--radius-full);
+      background: var(--color-primary-bg, var(--color-primary-600));
+      color: var(--color-on-primary);
+      border-color: transparent;
+      box-shadow: var(--shadow-lg);
+      &:hover:not(:disabled) {
+        background: var(--color-primary-bg-hover, var(--color-primary-700));
+      }
+    }
+
+    // Estado de carga (lo muta el contenedor dueño vía data-state — p.ej. `Form` component).
+    // Iter 33 G: spinner CSS pseudo-elemento; `spin` keyframe vive en shared/_animations.scss.
+    &[data-state='loading'] {
+      pointer-events: none;
+      opacity: 0.8;
+      position: relative;
+
+      &::after {
+        content: '';
+        width: 1em;
+        height: 1em;
+        border: var(--border-thin) solid currentColor;
+        border-top-color: transparent;
+        border-radius: var(--radius-full);
+        animation: spin var(--duration-slow, 0.8s) linear infinite;
+        flex-shrink: 0;
+      }
     }
   }
+}
 
-  &--secondary {
-    background: transparent;
-    border-color: var(--input-border);
-    color: var(--text-color);
-    &:hover {
-      background: rgba(255, 255, 255, 0.05);
-    }
-  }
-
-  &--danger {
-    background: var(--danger);
-    color: #fff;
-    &:hover {
-      background: #dc2626;
-    }
-  }
-
-  &--sm {
-    padding: 0.35rem 0.75rem;
-    font-size: 0.82rem;
-    border-radius: 4px;
-  }
+@function ui() {
+  @return meta.get-mixin('styles');
 }

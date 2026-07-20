@@ -1,0 +1,48 @@
+<%
+  const rows = locals.teamAttendance || [];
+  const escHtml = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const fmtAgo = (ms) => {
+    if (!ms) return 'sin registro';
+    const diff = Math.round((Date.now() - ms) / 1000);
+    if (diff < 60) return `${diff}s`;
+    if (diff < 3600) return `${Math.round(diff / 60)} min`;
+    if (diff < 86400) return `${Math.round(diff / 3600)} h`;
+    return `${Math.round(diff / 86400)} d`;
+  };
+
+  let bodyContent = '';
+  if (rows.length === 0) {
+    bodyContent = `<p class="l-home-widget__empty">Todavía no tenés equipo. Invitá al primer colaborador.</p>`;
+  } else {
+    const listItems = rows.map((r) => {
+      const emailVal = escHtml(r.email);
+      const initial = (emailVal.slice(0, 1) || 'U').toUpperCase();
+      const statusClass = r.status === 'active' ? 'success' : 'muted';
+      return `
+        <li class="l-activity-list__item">
+          <div class="l-activity-list__avatar-container">
+            <span class="l-activity-list__avatar">${initial}</span>
+            <span class="l-activity-list__dot l-activity-list__dot--${statusClass}" aria-hidden="true"></span>
+          </div>
+          <div class="l-activity-list__content">
+            <div class="l-activity-list__message">${emailVal}</div>
+            <div class="l-activity-list__meta">último ingreso hace ${fmtAgo(r.updatedAt)}</div>
+          </div>
+        </li>
+      `;
+    }).join('');
+
+    bodyContent = `
+      <ul class="l-activity-list">
+        ${listItems}
+      </ul>
+      <p class="l-home-widget__note">Registro del último acceso o acción de tus colaboradores.</p>
+    `;
+  }
+%>
+<%- include('frontend/components/card/ui', {
+  title: 'Colaboradores activos',
+  headerActions: `<span class="l-home-widget__link l-home-widget__link--muted">${rows.length} miembros</span>`,
+  body: bodyContent,
+  padding: 'md'
+}) %>

@@ -1,0 +1,28 @@
+<%
+  const error = locals.error || null;
+
+  const brandHtml = `
+    <div class="l-auth-card__brand">
+      ${include('frontend/components/icon/ui', { name: 'bolt', size: 'lg' })}
+      <span>${locals.brandTitle || 'Mi Baas'}</span>
+    </div>
+  `;
+
+  const alertHtml = error ? include('frontend/components/alert/ui', { variant: 'error', message: error }) : '';
+  const emailField = include('frontend/components/input/ui', {
+    name: 'email', type: 'email', label: 'Correo', required: true, autocomplete: 'email',
+  });
+  const submitBtn = include('frontend/components/button/ui', {
+    type: 'submit', variant: 'primary', label: 'Enviar enlace', class: 'u-w-full', disabled: true,
+  });
+  const backLink = `<p class="l-auth-card__subtitle u-text-muted"><a class="u-link" href="/dashboard/login">← Volver a iniciar sesión</a></p>`;
+
+  const fieldsHtml = `
+    <h1 class="l-auth-card__title">Recuperar acceso</h1>
+    <p class="l-auth-card__subtitle u-text-muted">Enviaremos un enlace de recuperación al correo si la cuenta existe.</p>
+    ${alertHtml}
+    ${emailField}
+    ${submitBtn}
+    ${backLink}
+  `;
+%><%- brandHtml + fieldsHtml %>

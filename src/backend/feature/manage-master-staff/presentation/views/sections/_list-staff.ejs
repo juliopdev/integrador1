@@ -1,0 +1,28 @@
+<%
+  const staff = locals.staff || [];
+  // La sección escapa SU propio texto (email); los badges/empty-state vienen de include() (auto-escapan).
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  let body;
+  if (staff.length === 0) {
+    body = include('frontend/components/empty-state/ui', {
+      title: 'Sin colaboradores',
+      message: 'Aún no has invitado a nadie a tu equipo.',
+    });
+  } else {
+    const rows = staff.map((m) => {
+      const statusBadge = include('frontend/components/badge/ui', { variant: m.status === 'active' ? 'success' : 'warning', label: m.status });
+      const roleBadges = (m.roles || []).map((r) => include('frontend/components/badge/ui', { variant: 'info', label: r })).join(' ');
+      return `
+        <li class="c-staff-item">
+          <div class="c-staff-item__main">
+            <span class="c-staff-item__email">${esc(m.email)}</span>
+            ${statusBadge}
+          </div>
+          <div class="c-staff-item__roles">${roleBadges || '<span class="u-text-muted">sin rol</span>'}</div>
+        </li>`;
+    }).join('');
+    body = `<ul class="c-staff-list">${rows}</ul>`;
+  }
+%>
+<%- include('frontend/components/card/ui', { title: 'Colaboradores', body, padding: 'md' }) %>

@@ -1,48 +1,69 @@
-# Dependencias
+# ── Dependencias ─────────────────────────────────────────────
 node_modules/
+
+# Gestores de paquetes: solo versionar pnpm-lock.yaml (el proyecto usa pnpm)
 package-lock.json
 yarn.lock
-pnpm-lock.yaml
+# pnpm-lock.yaml → NO ignorar, se versiona para reproducibilidad
 
-# Entornos
+# ── Variables de Entorno ──────────────────────────────────────
 .env
 .env.*.local
-!.env.local
+.env.local
+# .env.example → NO ignorar, debe estar versionado como referencia
 
-# Datos locales
+# ── Datos Locales (SQLite, backups) ───────────────────────────
 data/
+data/*
 local_storage/
 backups/*.db
 
-# Logs
+# ── Logs ─────────────────────────────────────────────────────
 logs/
 *.log
 npm-debug.log*
+pino-*.log
 
-# Compilados
+# ── Compilados y Build ────────────────────────────────────────
 dist/
+public/styles/*.css
+public/styles/*.css.map
 
-# Despliegues de tenants (NO versionar en repo)
+# ── Despliegues de Tenants ────────────────────────────────────
+# Los artefactos de despliegue no se versionan, solo el placeholder
 deployment/*
 !deployment/.gitkeep
 
-# IDE
+# ── Cobertura de Tests ────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── PM2 ──────────────────────────────────────────────────────
+.pm2/
+
+# ── Docker (volúmenes locales) ────────────────────────────────
+docker-composes/volumes/
+
+# ── IDE y Editores ────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
-.doc/
-.preview/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
 
-# OS
+# ── OS ───────────────────────────────────────────────────────
 .DS_Store
+.DS_Store?
 Thumbs.db
+ehthumbs.db
 
-# Test coverage
-coverage/
+.*/
+!.github/
+!.github/**
 
-# PM2
-.pm2/
-
-# Docker volumes (local)
-docker-composes/volumes/
+# ── Estado de Sesión Local (AI Handoff) ─────────────────────────
+workspace/
+CLAUDE.md

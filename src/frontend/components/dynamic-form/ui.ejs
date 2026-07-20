@@ -1,0 +1,71 @@
+<%
+  const resource = locals.resource || { name: '', fields: [] };
+  const action = locals.action || '';
+  const method = locals.method || 'POST';
+  const values = locals.values || {};
+  const submitLabel = locals.submitLabel || 'Guardar';
+  const submitClass = locals.submitClass || '';
+  const actionsClass = locals.actionsClass || '';
+%>
+<form
+  class="c-dynamic-form"
+  id="dyn-form-<%= resource.name %>"
+  action="<%= action %>"
+  method="<%= method %>"
+  data-resource="<%= resource.name %>"
+  novalidate
+>
+  <div class="c-dynamic-form__fields">
+    <% resource.fields.forEach(f => { %>
+      <div class="c-dynamic-form__field-wrapper c-dynamic-form__field-wrapper--span-<%= f.span || 12 %>">
+        <% if (f.type === 'text') { %>
+          <%- include('frontend/components/textarea/ui', {
+            name: f.name,
+            label: f.label || f.name.toUpperCase(),
+            value: values[f.name] || '',
+            required: f.required
+          }) %>
+        <% } else if (f.type === 'boolean') { %>
+          <%- include('frontend/components/checkbox/ui', {
+            name: f.name,
+            label: f.label || f.name.toUpperCase(),
+            checked: !!values[f.name],
+            required: f.required
+          }) %>
+        <% } else if (f.type === 'integer' || f.type === 'float') { %>
+          <%- include('frontend/components/input/ui', {
+            name: f.name,
+            type: 'number',
+            label: f.label || f.name.toUpperCase(),
+            value: values[f.name] !== undefined ? values[f.name] : '',
+            required: f.required
+          }) %>
+        <% } else if (f.type === 'select') { %>
+          <%- include('frontend/components/select/ui', {
+            name: f.name,
+            label: f.label || f.name.toUpperCase(),
+            options: f.options || [],
+            placeholder: f.placeholder || 'Select...',
+            required: f.required
+          }) %>
+        <% } else { %>
+          <%- include('frontend/components/input/ui', {
+            name: f.name,
+            type: f.type === 'date' ? 'date' : 'text',
+            label: f.label || f.name.toUpperCase(),
+            value: values[f.name] || '',
+            required: f.required
+          }) %>
+        <% } %>
+      </div>
+    <% }) %>
+  </div>
+
+  <div class="c-dynamic-form__error c-alert c-alert--error" aria-live="assertive" hidden></div>
+
+  <div class="c-dynamic-form__actions <%= actionsClass %>">
+    <button type="submit" class="c-button c-button--primary <%= submitClass %>">
+      <%= submitLabel %>
+    </button>
+  </div>
+</form>

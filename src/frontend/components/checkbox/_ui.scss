@@ -1,0 +1,103 @@
+// Estilos encapsulados del checkbox/switch. SOLO tokens; contraste vía on-color; motion por token.
+// Se emite bajo demanda vía theme.subscribe(c.checkbox-ui()). Ver scss.md.
+@use 'sass:meta';
+
+@mixin styles {
+  .c-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    cursor: pointer;
+    user-select: none;
+
+    // Input nativo accesible pero invisible: el estado se pinta en __control.
+    &__input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    &__control {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.125em;
+      height: 1.125em;
+      flex-shrink: 0;
+      background: var(--color-surface);
+      border: var(--border-thick) solid var(--color-border-strong);
+      border-radius: var(--radius-sm);
+      transition:
+        background-color var(--duration-fast) var(--easing-standard),
+        border-color var(--duration-fast) var(--easing-standard);
+    }
+
+    &__input:checked + &__control {
+      background: var(--color-primary-600);
+      border-color: var(--color-primary-600);
+
+      // Check dibujado en CSS (mismo trazo que el marker "done" del stepper).
+      &::after {
+        content: '';
+        width: 0.5em;
+        height: 0.28em;
+        border-left: var(--border-thick) solid var(--color-on-primary);
+        border-bottom: var(--border-thick) solid var(--color-on-primary);
+        transform: rotate(-45deg) translateY(-15%);
+      }
+    }
+
+    &__input:focus-visible + &__control {
+      outline: var(--border-thick) solid var(--color-focus-ring);
+      outline-offset: var(--border-thin);
+    }
+
+    &--disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    // ── Variante switch (toggles on/off: providers, websockets) ────────
+    &--switch .c-checkbox__control {
+      width: 2.25em;
+      height: 1.25em;
+      justify-content: flex-start;
+      padding: 0 var(--border-thick);
+      border-radius: var(--radius-full);
+      background: var(--color-border);
+      border-color: transparent;
+
+      &::after {
+        content: '';
+        width: 0.9em;
+        height: 0.9em;
+        border-radius: var(--radius-full);
+        background: var(--color-surface-solid);
+        box-shadow: var(--shadow-sm);
+        transition: transform var(--duration-fast) var(--easing-standard);
+      }
+    }
+
+    &--switch .c-checkbox__input:checked + .c-checkbox__control {
+      background: var(--color-primary-600);
+      border-color: transparent;
+
+      &::after {
+        // El track mide 2.25em con el thumb de 0.9em: desplazamiento = ancho - thumb - padding.
+        transform: translateX(1.15em);
+        border: none;
+        width: 0.9em;
+        height: 0.9em;
+      }
+    }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

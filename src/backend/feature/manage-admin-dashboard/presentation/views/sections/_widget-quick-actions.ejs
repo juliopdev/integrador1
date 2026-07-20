@@ -1,0 +1,27 @@
+<%
+  const actions = [
+    { href: '/dashboard/data', label: 'Ver mis registros', hint: 'Consultá y editá lo que guarda tu sitio', icon: 'database' },
+    { href: '/dashboard/metrics', label: 'Ver estadísticas', hint: 'Cómo le va a tu sitio en los últimos días', icon: 'chart' },
+    { href: '/dashboard/notifications', label: 'Enviar un aviso', hint: 'Comunicá algo importante a tus clientes', icon: 'send' },
+    { href: '/dashboard/staff', label: 'Mi equipo', hint: 'Invitá y gestioná a quienes te ayudan', icon: 'users' },
+    { href: '/dashboard/chat', label: 'Atender clientes', hint: 'Respondé consultas y dudas en el chat', icon: 'chat' }
+  ];
+
+  const actionsHtml = actions.map((act) => `
+    <a class="l-quick-action" href="${act.href}">
+      <div class="l-quick-action__icon-box">
+        ${include('frontend/components/icon/ui', { name: act.icon, size: 'lg' })}
+      </div>
+      <div class="l-quick-action__content">
+        <span class="l-quick-action__label">${act.label}</span>
+        <span class="l-quick-action__hint">${act.hint}</span>
+      </div>
+    </a>
+  `).join('');
+%>
+<%- include('frontend/components/card/ui', {
+  title: '¿Qué quieres hacer hoy?',
+  body: `<div class="l-quick-actions">${actionsHtml}</div>`,
+  padding: 'md',
+  class: 'l-home-widget--span-2'
+}) %>

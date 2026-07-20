@@ -1,0 +1,54 @@
+// Utilidades de una sola responsabilidad (`u-*`). Usan tokens, nunca literales. Ver scss.md.
+
+.u-flex { display: flex; }
+.u-flex-col { flex-direction: column; }
+.u-items-center { align-items: center; }
+.u-justify-between { justify-content: space-between; }
+.u-justify-center { justify-content: center; }
+.u-gap-sm { gap: var(--space-2); }
+.u-gap-md { gap: var(--space-4); }
+
+.u-text-center { text-align: center; }
+.u-text-muted { color: var(--color-text-muted); }
+.u-text-strong { color: var(--color-text); }
+.u-text-danger { color: var(--color-error); }
+.u-text-success { color: var(--color-success); }
+.u-text-accent { color: var(--color-primary-600); }
+
+// Enlace de acento sin subrayado (subraya al hover). Token, no literal.
+.u-link {
+  color: var(--color-primary-600);
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}
+
+// Tamaños/estilos de texto de una sola responsabilidad (tokens, nunca literales). Iter 37:
+// reemplazan los `style="font-size: var(--font-size-*)"` inline repartidos por los EJS.
+.u-text-xs { font-size: var(--font-size-xs); }
+.u-text-sm { font-size: var(--font-size-sm); }
+.u-text-md { font-size: var(--font-size-md); }
+.u-text-lg { font-size: var(--font-size-lg); }
+.u-text-mono { font-family: var(--font-mono); }
+.u-font-medium { font-weight: var(--font-weight-medium); }
+.u-font-bold { font-weight: var(--font-weight-bold); }
+.u-font-normal { font-weight: normal; } // keyword neutral (no token) para des-enfatizar dentro de un heading bold
+
+// Reset primero para que las direccionales (definidas después) ganen por orden de fuente.
+.u-m-0 { margin: 0; }
+.u-mt-0 { margin-top: 0; }
+.u-mb-0 { margin-bottom: 0; }
+.u-mt-xs { margin-top: var(--space-1); }
+.u-mt-md { margin-top: var(--space-4); }
+.u-mb-xs { margin-bottom: var(--space-1); }
+.u-mb-sm { margin-bottom: var(--space-2); }
+.u-mb-md { margin-bottom: var(--space-4); }
+.u-mb-lg { margin-bottom: var(--space-6); }
+.u-mt-lg { margin-top: var(--space-8); }
+
+.u-gap-lg { gap: var(--space-6); }
+
+.u-w-full { width: 100%; }
+.u-min-w-0 { min-width: 0; } // hijo de grid/flex que debe poder encogerse por debajo de su contenido
+.u-block { display: block; }
+.u-hidden { display: none; }
+.u-display-contents { display: contents; }

@@ -1,0 +1,38 @@
+<%
+  const name = locals.name || 'query';
+  const placeholder = locals.placeholder || 'Buscar...';
+  const value = locals.value || '';
+  const debounceMs = locals.debounceMs || 300;
+  const id = locals.id || ('search-' + name);
+%>
+<div class="c-search-input" data-state="idle">
+  <div class="c-search-input__wrapper">
+    <span class="c-search-input__icon-search" aria-hidden="true">
+      <%- include('frontend/components/icon/ui', { name: 'search', size: 'sm' }) %>
+    </span>
+
+    <input
+      type="search"
+      class="c-search-input__field"
+      id="<%= id %>"
+      name="<%= name %>"
+      value="<%= value %>"
+      placeholder="<%= placeholder %>"
+      data-debounce="<%= debounceMs %>"
+      autocomplete="off"
+    />
+
+    <span class="c-search-input__spinner" aria-hidden="true">
+      <%- include('frontend/components/spinner/ui') %>
+    </span>
+
+    <button
+      type="button"
+      class="c-search-input__clear"
+      aria-label="Limpiar búsqueda"
+      tabindex="-1"
+    >
+      <%- include('frontend/components/icon/ui', { name: 'x', size: 'sm' }) %>
+    </button>
+  </div>
+</div>

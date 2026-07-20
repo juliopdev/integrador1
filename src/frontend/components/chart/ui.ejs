@@ -1,0 +1,31 @@
+<%
+  const id = locals.id || 'chart';
+  const height = locals.height || '200px';
+  const type = locals.type || 'area'; // area | bar | donut
+  const showControls = locals.showControls !== false && type !== 'donut';
+%>
+<div class="c-chart" id="<%= id %>" data-type="<%= type %>">
+  <% if (showControls) { %>
+    <div class="c-chart__controls">
+      <div class="c-chart__tabs">
+        <button type="button" class="c-chart__tab <%= type === 'area' ? 'c-chart__tab--active' : '' %>" data-chart-type="area">Area</button>
+        <button type="button" class="c-chart__tab <%= type === 'bar' ? 'c-chart__tab--active' : '' %>" data-chart-type="bar">Bar</button>
+      </div>
+      <div class="c-chart__legend">
+        <span class="c-chart__legend-item">
+          <span class="c-chart__legend-dot c-chart__legend-dot--primary"></span>
+          Revenue
+        </span>
+        <span class="c-chart__legend-item">
+          <span class="c-chart__legend-dot c-chart__legend-dot--muted"></span>
+          Users
+        </span>
+      </div>
+    </div>
+  <% } %>
+
+  <div class="c-chart__canvas-wrapper" style="height: <%= height %>;">
+    <canvas class="c-chart__canvas"></canvas>
+    <div class="c-chart__tooltip" aria-hidden="true"></div>
+  </div>
+</div>

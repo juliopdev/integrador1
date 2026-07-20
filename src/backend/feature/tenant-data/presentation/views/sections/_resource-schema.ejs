@@ -1,0 +1,76 @@
+<%
+  // Sección: estructura del registro (campos + tipo + requerido) y acciones expuestas a los clientes.
+  const r = locals.resource;
+
+  // Mapa HTTP → verbo de la base de datos o método técnico.
+  const methodLabel = {
+    GET: 'GET (SELECT)',
+    POST: 'POST (INSERT)',
+    PUT: 'PUT (UPDATE)',
+    PATCH: 'PATCH (UPDATE)',
+    DELETE: 'DELETE',
+  };
+  
+  // Nombres de tipos de base de datos técnicos en inglés.
+  const typeLabel = {
+    string: 'VARCHAR (string)',
+    text: 'TEXT',
+    integer: 'INTEGER',
+    float: 'DECIMAL/FLOAT',
+    number: 'NUMERIC',
+    boolean: 'BOOLEAN',
+    date: 'DATE',
+    datetime: 'TIMESTAMP',
+    json: 'JSONB',
+    asset: 'ASSET',
+    relation: 'FOREIGN KEY (relation)',
+    file: 'ASSET (file)',
+    image: 'ASSET (image)',
+  };
+
+  const formatDefault = (f) => {
+    if (f.defaultValue === undefined || f.defaultValue === null || f.defaultValue === '') return '—';
+    return String(f.defaultValue);
+  };
+
+  const tableHtml = include('frontend/components/data-table/ui', {
+    columns: [
+      { key: 'name', label: 'Column' },
+      { key: 'type', label: 'Data Type' },
+      { key: 'default', label: 'Default Value' },
+      { key: 'required', label: 'NOT NULL' },
+      { key: 'unique', label: 'UNIQUE', align: 'right' },
+    ],
+    rows: r.fields.map((f) => ({
+      name: `<strong>${f.name}</strong>${f.description ? `<div class="u-text-xs u-text-muted u-mt-xs">${String(f.description).replace(/</g, '&lt;')}</div>` : ''}`,
+      type: include('frontend/components/badge/ui', { variant: 'neutral', label: typeLabel[f.type] || f.type }),
+      default: `<span class="u-text-sm">${formatDefault(f)}</span>`,
+      required: f.required
+        ? include('frontend/components/badge/ui', { variant: 'success', label: 'TRUE' })
+        : include('frontend/components/badge/ui', { variant: 'neutral', label: 'FALSE' }),
+      unique: f.unique
+        ? include('frontend/components/badge/ui', { variant: 'info', label: 'TRUE' })
+        : include('frontend/components/badge/ui', { variant: 'neutral', label: 'FALSE' }),
+    })),
+    emptyState: null,
+  });
+
+  const actionsHtml = (r.endpoints || []).length
+    ? (r.endpoints || []).map((e) => {
+        const actions = e.methods.map((m) => methodLabel[m] || m).join(' · ');
+        return `<div class="u-text-sm u-mb-xs"><strong>${actions}</strong> <span class="u-text-muted">(${e.path})</span></div>`;
+      }).join('')
+    : '<span class="u-text-muted u-text-sm">This resource has no public endpoints exposed to clients.</span>';
+%>
+<%- include('frontend/components/card/ui', {
+  title: 'Database Schema',
+  subtitle: 'Resource columns and endpoints exposed to clients.',
+  body: `
+    ${tableHtml}
+    <div class="u-mt-md">
+      <span class="u-text-muted u-text-xs u-block u-mb-xs">Exposed Endpoints</span>
+      ${actionsHtml}
+    </div>
+  `,
+  padding: 'md',
+}) %>

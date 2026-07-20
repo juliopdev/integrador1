@@ -1,0 +1,350 @@
+<%
+  // Paso 5 (`_step-manage-api` según .doc/tree/.../manage-platform-backend.md): composición
+  // visual del contrato. Sub-slice a: agregar resources al draft (`backend_contracts` con
+  // status='draft'). El draft acumula la composición; cuando el Superadmin publica, el paso
+  // `_step-finish` lo pre-carga en el textarea y hace `POST /backend` para activarlo.
+  //
+  // Los siguientes sub-slices añaden: campos por resource (a-2), endpoints (a-3), auth toggles.
+  const t = locals.activeTenant || {};
+  const state = locals.wizardState || {};
+  const draft = state.draftContract;
+  const published = state.publishedContract;
+
+  const draftResources = draft?.schema?.resources || [];
+  const draftEndpoints = draft?.schema?.endpoints || [];
+  const publishedResources = published?.schema?.resources || [];
+  const fieldTypes = locals.fieldTypes || [];
+  // P6c: stores elegibles = providers database linkeados y verificados (wizard state).
+  const availableStores = state.availableStores || [];
+
+  const HTTP = ['GET', 'POST', 'PUT', 'DELETE'];
+  const staffRoles = (state.roles || []).map((r) => r.name);
+  const storeOptions = [];
+  if (availableStores.includes('sql')) {
+    storeOptions.push({ value: 'sql', label: 'SQL (Postgres — Neon)', selected: true });
+  }
+  if (availableStores.includes('nosql')) {
+    storeOptions.push({ value: 'nosql', label: 'NoSQL (Mongo Atlas)', selected: storeOptions.length === 0 });
+  }
+
+  const editModals = [];
+
+  // Card de cabecera del draft: título con la versión; cuando no hay draft, estado explicativo.
+  const draftResourcesBody = draft ? `
+    <p class="u-text-muted u-text-sm u-mb-sm">
+      Composición en curso — cuando termines avanza con <strong>Continuar</strong> hasta <strong>Compilar</strong> para publicarla.
+    </p>
+    ${draftResources.length === 0
+      ? '<p class="u-text-muted u-text-sm u-m-0">Aún sin resources.</p>'
+      : include('frontend/components/data-table/ui', {
+          columns: [
+            { key: 'name', label: 'N. lógico' },
+            { key: 'physicalName', label: 'N. físico' },
+            { key: 'path', label: 'Ruta Api' },
+            { key: 'store', label: 'Store' },
+            { key: 'actions', label: '', align: 'right' },
+          ],
+          rows: draftResources.map((r) => {
+            const ep = draftEndpoints.find((e) => e.resource === r.name) || {};
+            const pathStr = ep.path || '(sin endpoint)';
+            const editModalId = `edit-resource-modal-${r.name}`;
+            const methods = ep.methods || ['GET', 'POST', 'PUT', 'DELETE'];
+
+            const editMethodRows = HTTP.map((m) => `
+              <div class="l-method-row">
+                <label class="l-method-chip" for="edit-resource-method-${r.name}-${m}">
+                  <input class="l-method-chip__input" type="checkbox" name="endpoint.methods" value="${m}" ${methods.includes(m) ? 'checked' : ''} id="edit-resource-method-${r.name}-${m}" />
+                  <span>${m}</span>
+                </label>
+                <span class="l-method-row__divider">→</span>
+                <span class="l-method-row__audiences">
+                  ${include('frontend/components/checkbox/ui', { name: `endpoint.access.${m}`, value: 'public', label: 'Público', checked: ep.access?.[m]?.includes('public'), id: `edit-resource-access-${r.name}-${m}-public` })}
+                  ${include('frontend/components/checkbox/ui', { name: `endpoint.access.${m}`, value: 'master', label: 'Master', checked: ep.access?.[m]?.includes('master'), id: `edit-resource-access-${r.name}-${m}-master` })}
+                  ${include('frontend/components/checkbox/ui', { name: `endpoint.access.${m}`, value: 'user', label: 'User', checked: ep.access?.[m]?.includes('user'), id: `edit-resource-access-${r.name}-${m}-user` })}
+                  ${include('frontend/components/checkbox/ui', { name: `endpoint.access.${m}`, value: 'owner', label: 'Owner', checked: ep.access?.[m]?.includes('owner'), id: `edit-resource-access-${r.name}-${m}-owner` })}
+                  ${staffRoles.map((roleName) => include('frontend/components/checkbox/ui', {
+                    name: `endpoint.access.${m}`, value: roleName, label: roleName, checked: ep.access?.[m]?.includes(roleName), id: `edit-resource-access-${r.name}-${m}-${roleName}`,
+                  })).join('')}
+                </span>
+              </div>
+            `).join('');
+
+            const editFormBody = `
+              <form class="c-form" method="post" action="/api-system/v1/tenants/${t.id}/backend/draft/resources/${r.name}" data-method="put" data-redirect="/dashboard/backends/${t.id}?step=api">
+                ${include('frontend/components/input/ui', {
+                  name: 'newName',
+                  label: 'Nombre lógico (ej: products, orders) — en plural',
+                  placeholder: 'products',
+                  value: r.name,
+                  required: true,
+                })}
+                ${include('frontend/components/input/ui', {
+                  name: 'physicalName',
+                  label: 'Nombre físico',
+                  placeholder: 'products_db',
+                  value: r.physicalName,
+                  required: true,
+                })}
+                ${include('frontend/components/select/ui', {
+                  name: 'store',
+                  label: 'Store',
+                  options: storeOptions.map((opt) => ({ ...opt, selected: opt.value === r.store })),
+                  disabled: availableStores.length === 0,
+                  placeholder: 'Seleccionar store...'
+                })}
+                
+                <div class="u-my-sm">
+                  <input type="hidden" name="manageable" value="false" />
+                  ${include('frontend/components/checkbox/ui', {
+                    name: 'manageable',
+                    label: 'Habilitar en Gestor de Contenidos (CMS)',
+                    variant: 'switch',
+                    checked: r.manageable !== false,
+                    id: `edit-resource-manageable-${r.name}`,
+                  })}
+                </div>
+
+                <hr class="u-my-md" style="border: none; border-top: var(--border-thin) solid var(--color-border);" />
+
+                <div class="u-mb-sm">
+                  <strong class="u-text-sm u-block">Endpoint del resource</strong>
+                  <span class="u-text-muted u-text-xs">Ajustá el path del endpoint público, sus métodos HTTP activos y quién puede acceder a ellos.</span>
+                </div>
+
+                ${include('frontend/components/input/ui', {
+                  name: 'endpoint.path',
+                  label: 'Path del endpoint',
+                  placeholder: '/products',
+                  value: ep.path || '',
+                  required: true,
+                })}
+
+                <div class="nocode-field">
+                  <span class="l-nocode-field__label">Métodos y quién puede usarlos</span>
+                  <div class="access-grid u-mt-xs">
+                    ${editMethodRows}
+                  </div>
+                </div>
+
+                <div class="u-mt-4">
+                  ${include('frontend/components/button/ui', {
+                    type: 'submit',
+                    variant: 'primary',
+                    label: 'Actualizar resource y endpoint',
+                    class: 'u-w-full',
+                  })}
+                </div>
+              </form>
+            `;
+
+            editModals.push(include('frontend/components/modal/ui', {
+              id: editModalId,
+              title: `Editar Resource ${r.name}`,
+              size: 'lg',
+              body: editFormBody,
+            }));
+
+            return {
+              name: `<code class="u-text-sm">${r.name}</code>`,
+              physicalName: `<code class="u-text-xs u-text-muted">${r.physicalName}</code>`,
+              path: `<code class="u-text-xs u-text-muted">${pathStr}</code>`,
+              store: include('frontend/components/badge/ui', {
+                variant: r.store === 'sql' ? 'success' : 'neutral',
+                label: r.store === 'sql' ? 'Postgres' : 'Mongo',
+              }),
+              actions: `
+                <div class="u-flex u-gap-xs u-justify-end">
+                  ${include('frontend/components/button/ui', { type: 'button', variant: 'ghost', size: 'sm', label: '', icon: 'pencil', ariaLabel: 'Editar', action: 'modal:open', target: editModalId })}
+                  <form class="c-form l-nocode-cell-form" method="post" action="/api-system/v1/tenants/${t.id}/backend/draft/resources/${r.name}" data-method="delete" data-redirect="/dashboard/backends/${t.id}?step=api">
+                    ${include('frontend/components/button/ui', { type: 'submit', variant: 'ghost', size: 'sm', label: '', icon: 'trash', ariaLabel: 'Eliminar' })}
+                  </form>
+                </div>
+              `,
+            };
+          }),
+          emptyState: null,
+        })
+    }
+  ` : `
+    <p class="u-text-muted u-text-sm u-m-0">
+      Al agregar el primer resource se inicia un borrador (draft) para este tenant.
+    </p>
+  `;
+
+  const publishedRefBody = published ? `
+    <p class="u-text-muted u-text-sm u-mb-sm">
+      Los resources actuales sirven de referencia. Al publicar el draft se creará una nueva versión
+      y las tablas existentes migrarán por <code>field.id</code> preservando la data.
+    </p>
+    ${publishedResources.length === 0
+      ? '<p class="u-text-muted u-text-sm u-m-0">El contrato publicado no define resources.</p>'
+      : `<ul class="nocode-list">${
+          publishedResources.map((r) => `<li><code>${r.name}</code> · ${r.physicalName} · ${r.store}</li>`).join('')
+        }</ul>`
+      }
+  ` : '';
+
+  const initMethodRows = HTTP.map((m) => `
+    <div class="l-method-row">
+      <label class="l-method-chip" for="new-resource-method-${m}">
+        <input class="l-method-chip__input" type="checkbox" name="endpoint.methods" value="${m}" checked id="new-resource-method-${m}" />
+        <span>${m}</span>
+      </label>
+      <span class="l-method-row__divider">→</span>
+      <span class="l-method-row__audiences">
+        ${include('frontend/components/checkbox/ui', { name: `endpoint.access.${m}`, value: 'public', label: 'Público', checked: false, id: `new-resource-access-${m}-public` })}
+        ${include('frontend/components/checkbox/ui', { name: `endpoint.access.${m}`, value: 'master', label: 'Master', checked: true, id: `new-resource-access-${m}-master` })}
+        ${include('frontend/components/checkbox/ui', { name: `endpoint.access.${m}`, value: 'user', label: 'User', checked: m === 'GET', id: `new-resource-access-${m}-user` })}
+        ${include('frontend/components/checkbox/ui', { name: `endpoint.access.${m}`, value: 'owner', label: 'Owner', checked: false, id: `new-resource-access-${m}-owner` })}
+        ${staffRoles.map((roleName) => include('frontend/components/checkbox/ui', {
+          name: `endpoint.access.${m}`, value: roleName, label: roleName, checked: m === 'GET', id: `new-resource-access-${m}-${roleName}`,
+        })).join('')}
+      </span>
+    </div>
+  `).join('');
+
+  const formHtml = include('frontend/components/form/ui', {
+    method: 'post',
+    action: `/api-system/v1/tenants/${t.id}/backend/draft/resources`,
+    redirect: `/dashboard/backends/${t.id}?step=api`,
+    // La clase `js-resource-autocomplete` activa el handler en dashboard.entry.js que sincroniza
+    // `physicalName` y `endpoint.path` mientras el operador escribe `name`.
+    class: 'js-resource-autocomplete',
+    body: `
+      ${include('frontend/components/input/ui', {
+        name: 'name',
+        label: 'Nombre lógico (ej: products, orders) — en plural',
+        placeholder: 'products',
+        required: true,
+      })}
+      ${include('frontend/components/input/ui', {
+        name: 'physicalName',
+        label: 'Nombre físico (opcional — auto: <lógico>_db)',
+        placeholder: 'products_db',
+        required: false,
+      })}
+      ${include('frontend/components/select/ui', {
+        name: 'store',
+        label: 'Store',
+        options: storeOptions,
+        disabled: availableStores.length === 0,
+        placeholder: 'Seleccionar store...'
+      })}
+      ${availableStores.length === 0 ? '<div class="u-mt-1"><span class="u-text-muted u-text-xs">Linkea un proveedor de base de datos en el paso Proveedores para elegir store.</span></div>' : ''}
+
+      <div class="u-my-sm">
+        <input type="hidden" name="manageable" value="false" />
+        ${include('frontend/components/checkbox/ui', {
+          name: 'manageable',
+          label: 'Habilitar en Gestor de Contenidos (CMS)',
+          variant: 'switch',
+          checked: true,
+          id: 'new-resource-manageable',
+        })}
+      </div>
+
+      <hr class="u-my-md" style="border: none; border-top: var(--border-thin) solid var(--color-border);" />
+
+      <div class="u-mb-sm">
+        <strong class="u-text-sm u-block">Endpoint del resource</strong>
+        <span class="u-text-muted u-text-xs">Cada resource expone una API para el frontend del tenant. Ajustá path, métodos y permisos antes de crearlo — se aplican de una vez.</span>
+      </div>
+
+      ${include('frontend/components/input/ui', {
+        name: 'endpoint.path',
+        label: 'Path del endpoint (auto: /<lógico>)',
+        placeholder: '/products',
+        required: false,
+      })}
+
+      <div class="nocode-field">
+        <span class="l-nocode-field__label">Métodos y quién puede usarlos</span>
+        <span class="u-text-muted u-text-xs">Master = Administrador principal · User = Usuario final del tenant · roles = Staff con ese rol.</span>
+        <div class="access-grid u-mt-xs">
+          ${initMethodRows}
+        </div>
+      </div>
+
+      <div class="u-mt-4">
+        ${include('frontend/components/button/ui', {
+          type: 'submit',
+          variant: 'primary',
+          label: 'Agregar resource + endpoint',
+          class: 'u-w-full',
+        })}
+      </div>
+    `
+  });
+%>
+
+<div class="u-flex u-flex-col u-gap-md">
+  <% if (draft) { %>
+    <%- include('frontend/components/card/ui', {
+      titleHtml: `Draft actual: <code>${draft.version}</code>`,
+      body: draftResourcesBody,
+      padding: 'md',
+    }) %>
+  <% } else { %>
+    <%- include('frontend/components/card/ui', {
+      title: 'Sin draft en curso',
+      body: draftResourcesBody,
+      padding: 'md',
+    }) %>
+  <% } %>
+
+  <%- include('frontend/components/card/ui', {
+    title: 'Agregar resource al draft',
+    subtitle: 'Definí el resource y su endpoint público en un solo paso. Los campos "Nombre físico" y "Path" se autocompletan al escribir el nombre lógico — editalos si necesitás algo distinto. Las columnas del resource se diseñan en el paso Data.',
+    body: formHtml,
+    padding: 'lg',
+  }) %>
+
+  <%# P7: el diseño de campos por resource vive en el paso Data (_step-manage-data). %>
+
+  <%- editModals.join('') %>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Sincronizar checkboxes de acceso (Público vs Roles)
+    const handlePublicChange = (publicCheckbox) => {
+      const parent = publicCheckbox.closest('.l-method-row__audiences');
+      if (!parent) return;
+
+      const checkboxes = parent.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach((cb) => {
+        if (cb !== publicCheckbox) {
+          if (publicCheckbox.checked) {
+            cb.checked = false;
+            cb.disabled = true;
+          } else {
+            cb.disabled = false;
+            // Volver a marcar Master como default al desactivar Público
+            if (cb.value === 'master') cb.checked = true;
+          }
+        }
+      });
+    };
+
+    const attachListeners = () => {
+      document.querySelectorAll('input[value="public"]').forEach((cb) => {
+        // Remover listener previo si existe para no duplicar
+        cb.removeEventListener('change', cb._listener);
+        cb._listener = () => handlePublicChange(cb);
+        cb.addEventListener('change', cb._listener);
+        
+        // Ejecutar estado inicial
+        if (cb.checked) {
+          handlePublicChange(cb);
+        }
+      });
+    };
+
+    // Registrar en carga inicial
+    attachListeners();
+
+    // Como el wizard usa formularios dinámicos y SSR parcial, observamos si se re-inyectan elementos
+    const observer = new MutationObserver(() => attachListeners());
+    observer.observe(document.body, { childList: true, subtree: true });
+  });
+</script>

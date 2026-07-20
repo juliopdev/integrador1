@@ -1,0 +1,107 @@
+<%
+  const logs = locals.logs || [];
+  const counts = locals.counts || { total: 0, info: 0, warn: 0, error: 0 };
+  const selected = locals.selectedLevel;
+  const nextBefore = locals.nextBefore;
+
+  const escHtml = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const fmtDate = (ms) => new Date(ms).toLocaleString('es-PE');
+
+  const levelBadge = (lvl) => {
+    const cls = lvl === 'error' ? 'c-badge--danger' : lvl === 'warn' ? 'c-badge--warning' : 'c-badge--info';
+    return `<span class="c-badge ${cls}">${escHtml(lvl)}</span>`;
+  };
+
+  // Filtro estilizado como tabs (mismo look que Health) pero es SSR real: cada tab es un <a> que
+  // recarga con ?level=… — por eso el nav no lleva role="tablist".
+  // Iter UX A2: cada badge lleva `data-count-for` con el nivel al que representa (`total`, `info`,
+  // `warn`, `error`). El handler `log:received` en dashboard.entry.js incrementa estos números
+  // en vivo cuando llegan logs del SSE, sin recargar la página.
+  const filterCount = (lvl, count) => {
+    const key = lvl || 'total';
+    if (!lvl) return `<span class="c-badge c-badge--muted" data-count-for="${key}">${count}</span>`;
+    const cls = lvl === 'error' ? 'c-badge--danger' : lvl === 'warn' ? 'c-badge--warning' : 'c-badge--info';
+    return `<span class="c-badge ${cls}" data-count-for="${key}">${count}</span>`;
+  };
+  const filterTab = (lvl, label, count) => {
+    const isActive = selected === lvl;
+    return `<a class="c-tabs__tab ${isActive ? 'c-tabs__tab--active' : ''}" href="/dashboard/logs${lvl ? `?level=${lvl}` : ''}">${escHtml(label)} ${filterCount(lvl, count)}</a>`;
+  };
+
+  const columns = [
+    { key: 'date', label: 'Fecha' },
+    { key: 'level', label: 'Nivel' },
+    { key: 'message', label: 'Mensaje' },
+    { key: 'metadata', label: 'Metadata' },
+  ];
+  const rows = logs.map((l) => ({
+    date: fmtDate(l.createdAt),
+    level: levelBadge(l.level),
+    message: `<code>${escHtml(l.message)}</code>`,
+    metadata: l.metadata ? `<pre class="l-log-meta">${escHtml(JSON.stringify(l.metadata))}</pre>` : '—',
+  }));
+
+  const tableHtml = include('frontend/components/data-table/ui', {
+    columns,
+    rows,
+    emptyState: {
+      title: 'Sin logs por ahora',
+      message: 'Los logs de plataforma aparecerán acá conforme la aplicación los emita.',
+    },
+  });
+
+  const moreLink = logs.length > 0 && nextBefore
+    ? `<a class="c-button c-button--ghost c-button--sm" href="/dashboard/logs?${selected ? `level=${selected}&` : ''}before=${nextBefore}">Cargar más antiguos ↓</a>`
+    : '';
+%>
+
+<div class="u-flex u-flex-col u-gap-md">
+  <%- include('frontend/components/breadcrumbs/ui', {
+    currentPath: locals.currentPath,
+    items: [
+      { label: 'Inicio', href: '/dashboard' },
+      { label: 'Logs' },
+    ],
+  }) %>
+
+  <%- include('frontend/components/page-header/ui', {
+    title: 'Logs de la plataforma',
+    subtitle: `${counts.total} entradas — ${counts.error} error / ${counts.warn} warn / ${counts.info} info. Stream en vivo arriba; histórico y filtros abajo.`,
+  }) %>
+
+  <%# Terminal en vivo (SSE). Se suscribe a /api-system/v1/logs/stream y agrega cada nuevo log
+      con formato `[HH:MM:SS] LEVEL mensaje`. El estado ● live / ○ reconectando lo pinta el JS
+      en el footer del terminal. Reemplaza al viejo `data-refresh-seconds="15"` que recargaba
+      toda la página; el stream cubre "novedad" sin flicker. %>
+  <%- include('frontend/components/card/ui', {
+    title: 'Stream en vivo',
+    subtitle: 'Logs nuevos aparecen aquí en tiempo real. Pausa el auto-scroll para leer sin que la vista se mueva.',
+    body: include('frontend/components/terminal/ui', {
+      id: 'platform-logs',
+      title: 'platform_logs_local · live',
+      sseSrc: '/api-system/v1/logs/stream',
+      maxLines: 200,
+    }),
+    padding: 'md',
+  }) %>
+
+  <nav class="c-tabs" aria-label="Filtro por nivel de log">
+    <div class="c-tabs__list">
+      <%- filterTab(null, 'Todos', counts.total) %>
+      <%- filterTab('info', 'Info', counts.info) %>
+      <%- filterTab('warn', 'Warn', counts.warn) %>
+      <%- filterTab('error', 'Error', counts.error) %>
+    </div>
+  </nav>
+
+  <%- include('frontend/components/card/ui', {
+    title: 'Histórico',
+    subtitle: 'Búsqueda y auditoría del log persistido. Los filtros de arriba afectan sólo esta tabla.',
+    body: tableHtml + (moreLink ? `<div class="u-mt-md">${moreLink}</div>` : ''),
+    padding: 'md',
+  }) %>
+</div>
+
+<style>
+  .l-log-meta { font-size: var(--font-size-xs); background: var(--color-surface); padding: var(--space-xs); border-radius: var(--radius-sm); max-width: 40ch; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+</style>

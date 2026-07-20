@@ -1,21 +1,45 @@
-/**
- * ES: Mixin de variables de modo claro para Glassmorphism.
- */
-@mixin glassmorphism-light {
-  --bg-color: #f3f4f6;
-  --bg-gradient: radial-gradient(circle at center, #e0e7ff 0%, #f3f4f6 100%);
-  --text-color: #1f2937;
-  --text-muted: #4b5563;
-  --card-bg: rgba(255, 255, 255, 0.45);
-  --card-border: rgba(0, 0, 0, 0.09);
-  --card-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
-  --accent-color: #6366f1;
-  --accent-hover: #4f46e5;
-  --accent-glow: rgba(99, 102, 241, 0.2);
-  --input-bg: rgba(255, 255, 255, 0.6);
-  --input-border: rgba(0, 0, 0, 0.15);
-  --input-focus-border: #6366f1;
-  --glass-blur: blur(16px);
-  --transition-fast: all 0.15s ease;
-  --danger: #dc2626;
-}
+// Tema glassmorphism — modo CLARO.
+// Define superficies translúcidas con bordes sutiles similares al cristal y acentos vibrantes.
+
+$light-mode: (
+  // Mesh multicolor con croma real: el cristal solo se lee si hay color detrás del blur.
+  'color-bg': (
+    radial-gradient(circle at 12% 18%, rgba(129, 140, 248, 0.55) 0%, transparent 45%),
+    radial-gradient(circle at 88% 12%, rgba(244, 114, 182, 0.35) 0%, transparent 40%),
+    radial-gradient(circle at 75% 88%, rgba(103, 232, 249, 0.4) 0%, transparent 45%),
+    linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)
+  ),
+
+  // Superficies translúcidas (más abiertas que antes para que el mesh pase a través)
+  'color-surface': rgba(255, 255, 255, 0.45), // Cristal blanco traslúcido
+  'color-surface-raised': rgba(255, 255, 255, 0.62), // Capa elevada ligeramente más opaca
+  'color-surface-solid': rgba(255, 255, 255, 0.92), // Modal: cristal casi opaco — legible sobre cualquier fondo
+  'color-overlay': rgba(30, 27, 75, 0.35), // Overlay índigo con dimming real (0.08 no daba foco al modal)
+  'color-scrim': rgba(15, 23, 42, 0.35),
+
+  // Texto
+  'color-text': #1e1b4b, // Indigo 950 muy oscuro para excelente contraste
+  'color-text-muted': #4c5578, // Índigo-slate desaturado: secundario legible que no parece link
+
+  // Bordes sutiles y claros (efecto de reflexión del cristal)
+  'color-border': rgba(255, 255, 255, 0.55),
+  'color-border-strong': rgba(255, 255, 255, 0.8),
+
+  // Marca (escala Indigo vibrante)
+  'color-primary-50': #eff6ff,
+  'color-primary-100': #e0e7ff,
+  'color-primary-500': #6366f1,
+  'color-primary-600': #4f46e5,
+  'color-primary-700': #4338ca,
+  'color-primary-bg': linear-gradient(135deg, #6366f1 0%, #4f46e5 100%),
+  'color-primary-bg-hover': linear-gradient(135deg, #4f46e5 0%, #4338ca 100%),
+
+  // On-colors (contraste sobre superficies sólidas/de acento)
+  'color-on-primary': #ffffff,
+  'color-on-surface': #1e1b4b,
+  'color-on-inverse': #ffffff,
+
+  // Foco / skeleton
+  'color-focus-ring': rgba(99, 102, 241, 0.4),
+  'color-skeleton': rgba(255, 255, 255, 0.25),
+);

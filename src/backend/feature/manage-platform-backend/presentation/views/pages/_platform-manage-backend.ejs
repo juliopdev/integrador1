@@ -1,0 +1,49 @@
+<%
+  // Página delgada (views.md): shell del asistente No-Code para el tenant seleccionado.
+  const t = locals.activeTenant || {};
+  const currentStep = locals.currentStep || 'version';
+
+  // Mapping id → archivo de sección: los nombres canónicos viven en
+  // .doc/tree/src/backend/feature/manage-platform-backend.md (`_step-manage-*`); el id corto
+  // (`provider`, `api`, …) se usa en el sidebar y en `?step=` para no filtrar nombres internos.
+  const stepFile = {
+    version:  '_step-manage-version-backend',
+    provider: '_step-manage-provider',
+    role:     '_step-manage-role',
+    api:      '_step-manage-api',
+    data:     '_step-manage-data',
+    ws:       '_step-manage-ws-channel',
+    finish:   '_step-finish',
+  }[currentStep] || '_step-manage-version-backend';
+  const stepSection = `backend/feature/manage-platform-backend/presentation/views/sections/${stepFile}`;
+
+  const stepLabels = {
+    version: 'Versión', provider: 'Proveedores', role: 'Roles',
+    api: 'Resources & endpoints', data: 'Data', ws: 'WebSocket', finish: 'Compilar y deploy',
+  };
+%>
+<div class="u-flex u-flex-col u-gap-md">
+  <%- include('frontend/components/breadcrumbs/ui', {
+    currentPath: locals.currentPath,
+    items: [
+      { label: 'Inicio', href: '/dashboard' },
+      { label: 'Backends', href: '/dashboard/backends' },
+      { label: t.subdomain, href: `/dashboard/backends/${t.id}` },
+      { label: `Componer · ${stepLabels[currentStep] || 'Versión'}` },
+    ],
+  }) %>
+  <%- include('frontend/components/page-header/ui', {
+    titleHtml: `Asistente No-Code: ${t.subdomain}`,
+    subtitleHtml: 'Compón el contrato del backend paso a paso; cada avance se guarda automáticamente como borrador del tenant.',
+  }) %>
+
+  <div class="wizard-grid">
+    <%- include('backend/feature/manage-platform-backend/presentation/views/sections/_wizard-progress-panel', locals) %>
+
+    <div class="u-min-w-0">
+      <%- include(stepSection, locals) %>
+
+      <%- include('backend/feature/manage-platform-backend/presentation/views/sections/_wizard-nav', locals) %>
+    </div>
+  </div>
+</div>

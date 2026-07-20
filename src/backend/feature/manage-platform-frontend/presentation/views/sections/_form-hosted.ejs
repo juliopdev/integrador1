@@ -1,0 +1,304 @@
+<%
+  const tenant = locals.tenant || {};
+  const deploy = locals.deploy || {};
+  const escHtml = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  const initialEnvValue = (deploy?.mode === 'hosted' && deploy.envVarsJson)
+    ? Object.entries(JSON.parse(deploy.envVarsJson)).map(([k, v]) => `${k}=${v}`).join('\n')
+    : '';
+%>
+<form class="c-form" enctype="multipart/form-data" action="/api-system/v1/frontends/<%= escHtml(tenant.id) %>/hosted" data-method="put" data-redirect="/dashboard/frontends/<%= escHtml(tenant.id) %>">
+  <div class="u-flex u-flex-col u-gap-sm" style="margin-bottom: var(--space-4);">
+    <div class="u-flex u-align-center u-justify-between" style="gap: var(--space-2); flex-wrap: wrap;">
+      <div class="u-flex u-align-center u-gap-xs">
+        <label class="c-input__label" style="margin: 0; font-weight: var(--font-weight-bold);">Variables de entorno públicas</label>
+        <button type="button" style="background: none; border: none; padding: 2px; cursor: pointer; display: flex; align-items: center;" data-action="modal:open" data-target="env-vars-info-modal" data-tooltip="Información sobre seguridad y variables públicas">
+          <svg class="c-icon c-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="color: var(--color-text-muted); width: 16px; height: 16px;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="u-flex u-gap-xs">
+        <button type="button" class="c-button c-button--outline c-button--sm" id="btn-add-env-lote" data-action="modal:open" data-target="modal-import-env-lote">
+          Importar lote
+        </button>
+        <button type="button" class="c-button c-button--primary c-button--sm" id="btn-add-env-single" data-action="modal:open" data-target="modal-add-env-var">
+          Agregar variable
+        </button>
+      </div>
+    </div>
+
+    <input type="hidden" id="field-envVars" name="envVars" value="<%= escHtml(initialEnvValue) %>">
+
+    <div id="env-vars-table-container">
+      <!-- Renderizado dinámico -->
+    </div>
+  </div>
+
+  <%- include('frontend/components/file-upload/ui', {
+    name: 'archive',
+    accept: '.zip,.rar',
+    maxSize: 50,
+    label: 'Arrastrá tu archivo .zip o .rar aquí, o hacé click para seleccionar',
+  }) %>
+  <%- include('frontend/components/button/ui', { type: 'submit', variant: 'primary', label: 'Desplegar frontend', icon: 'send', class: 'u-w-full' }) %>
+</form>
+
+<script>
+(function() {
+  const hiddenInput = document.getElementById('field-envVars');
+  const tableContainer = document.getElementById('env-vars-table-container');
+
+  let envVarsList = [];
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  // Parse initial env vars from hidden input
+  function parseInitial() {
+    envVarsList = [];
+    if (!hiddenInput) return;
+    const lines = hiddenInput.value.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx <= 0) continue;
+      const key = trimmed.slice(0, eqIdx).trim();
+      const value = trimmed.slice(eqIdx + 1).trim();
+      envVarsList.push({ key, value, revealed: false });
+    }
+  }
+
+  // Serialize to hidden input
+  function serialize() {
+    if (!hiddenInput) return;
+    hiddenInput.value = envVarsList.map(v => `${v.key}=${v.value}`).join('\n');
+  }
+
+  // Render the table or empty state
+  function render() {
+    if (envVarsList.length === 0) {
+      tableContainer.innerHTML = `
+        <div class="c-empty-state" style="padding: var(--space-6); border: 1px dashed var(--color-border); border-radius: var(--radius-md); text-align: center; background-color: var(--color-surface-raised);">
+          <p class="u-text-muted u-text-sm u-m-0">No hay variables de entorno configuradas.</p>
+        </div>
+      `;
+      return;
+    }
+
+    let rowsHtml = '';
+    envVarsList.forEach((v, index) => {
+      const displayVal = v.revealed ? v.value : '••••••••••••••••';
+      const eyeIcon = v.revealed ? `
+        <svg class="c-icon c-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="width: 16px; height: 16px;">
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+          <line x1="1" y1="1" x2="23" y2="23"></line>
+        </svg>
+      ` : `
+        <svg class="c-icon c-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="width: 16px; height: 16px;">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      `;
+
+      const pencilIcon = `
+        <svg class="c-icon c-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="width: 16px; height: 16px;">
+          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+        </svg>
+      `;
+
+      const trashIcon = `
+        <svg class="c-icon c-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="width: 16px; height: 16px;">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      `;
+
+      rowsHtml += `
+        <tr class="c-data-table__row" data-index="${index}">
+          <td class="c-data-table__cell" style="font-family: monospace; font-weight: bold; color: var(--color-text);">${escHtml(v.key)}</td>
+          <td class="c-data-table__cell" style="font-family: monospace; color: var(--color-text-muted); position: relative; max-width: 350px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            ${escHtml(displayVal)}
+          </td>
+          <td class="c-data-table__cell" style="text-align: right; white-space: nowrap; padding-right: var(--space-4);">
+            <button type="button" class="c-button c-button--ghost c-button--sm btn-toggle-reveal" style="padding: var(--space-1); border-radius: var(--radius-full); margin-right: 4px;" data-index="${index}" data-tooltip="${v.revealed ? 'Ocultar valor' : 'Revelar valor'}">
+              ${eyeIcon}
+            </button>
+            <button type="button" class="c-button c-button--ghost c-button--sm btn-edit-env" style="padding: var(--space-1); border-radius: var(--radius-full); margin-right: 4px;" data-index="${index}" data-action="modal:open" data-target="modal-add-env-var" data-tooltip="Editar variable">
+              ${pencilIcon}
+            </button>
+            <button type="button" class="c-button c-button--ghost c-button--sm btn-delete-env" style="padding: var(--space-1); border-radius: var(--radius-full); color: var(--color-error);" data-index="${index}" data-tooltip="Eliminar">
+              ${trashIcon}
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tableContainer.innerHTML = `
+      <div class="c-data-table" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden; background-color: var(--color-surface);">
+        <table class="c-data-table__table">
+          <thead class="c-data-table__head" style="background-color: var(--color-surface-raised);">
+            <tr class="c-data-table__row c-data-table__row--header">
+              <th class="c-data-table__cell c-data-table__cell--head" style="padding-left: var(--space-4);">Clave</th>
+              <th class="c-data-table__cell c-data-table__cell--head">Valor</th>
+              <th class="c-data-table__cell c-data-table__cell--head" style="width: 130px; text-align: right; padding-right: var(--space-4);">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // Bind to hostedTab container to prevent event leaks on Swup navigation
+  const hostedTab = document.getElementById('fe-hosted');
+  if (hostedTab) {
+    hostedTab.addEventListener('click', function(e) {
+      // 1. Toggle reveal
+      const btnReveal = e.target.closest('.btn-toggle-reveal');
+      if (btnReveal) {
+        const idx = parseInt(btnReveal.dataset.index, 10);
+        envVarsList[idx].revealed = !envVarsList[idx].revealed;
+        render();
+        return;
+      }
+
+      // 2. Delete
+      const btnDelete = e.target.closest('.btn-delete-env');
+      if (btnDelete) {
+        const idx = parseInt(btnDelete.dataset.index, 10);
+        envVarsList.splice(idx, 1);
+        serialize();
+        render();
+        return;
+      }
+
+      // 3. Edit
+      const btnEdit = e.target.closest('.btn-edit-env');
+      if (btnEdit) {
+        const idx = parseInt(btnEdit.dataset.index, 10);
+        const item = envVarsList[idx];
+        
+        const keyInput = document.getElementById('field-new-env-key');
+        const valInput = document.getElementById('field-new-env-val');
+        const modal = document.getElementById('modal-add-env-var');
+        const modalTitle = modal.querySelector('.c-modal__title');
+        
+        keyInput.value = item.key;
+        keyInput.readOnly = true; // Key shouldn't change
+        valInput.value = item.value;
+        modal.dataset.editingIndex = idx;
+        modalTitle.textContent = "Editar Variable de Entorno";
+        return;
+      }
+
+      // 4. Open Add Single Modal
+      const btnAddSingle = e.target.closest('#btn-add-env-single');
+      if (btnAddSingle) {
+        const keyInput = document.getElementById('field-new-env-key');
+        const valInput = document.getElementById('field-new-env-val');
+        const modal = document.getElementById('modal-add-env-var');
+        const modalTitle = modal.querySelector('.c-modal__title');
+        
+        keyInput.value = '';
+        keyInput.readOnly = false;
+        valInput.value = '';
+        delete modal.dataset.editingIndex;
+        modalTitle.textContent = "Agregar Variable de Entorno";
+        return;
+      }
+
+      // 5. Open Add Lote Modal
+      const btnAddLote = e.target.closest('#btn-add-env-lote');
+      if (btnAddLote) {
+        const txt = document.getElementById('textarea-import-env-lote');
+        txt.value = '';
+        return;
+      }
+    });
+  }
+
+  // Listeners on Modals (persist on document is fine since buttons are inside unique modal ids)
+  document.addEventListener('click', function(e) {
+    // 6. Save Single (Add or Edit)
+    const btnSaveNew = e.target.closest('#btn-save-new-env');
+    if (btnSaveNew) {
+      const keyInput = document.getElementById('field-new-env-key');
+      const valInput = document.getElementById('field-new-env-val');
+      const key = keyInput.value.trim();
+      const val = valInput.value.trim();
+
+      if (!key) return;
+
+      const modal = document.getElementById('modal-add-env-var');
+      const editIdx = modal.dataset.editingIndex;
+
+      if (editIdx !== undefined) {
+        const idx = parseInt(editIdx, 10);
+        envVarsList[idx].value = val;
+      } else {
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key)) {
+          alert('La clave debe contener sólo letras, números y guiones bajos, y no puede empezar con un número.');
+          return;
+        }
+        if (envVarsList.some(v => v.key === key)) {
+          alert('Esta clave ya existe.');
+          return;
+        }
+        envVarsList.push({ key, value: val, revealed: false });
+      }
+
+      serialize();
+      render();
+      modal.dataset.open = 'false';
+      return;
+    }
+
+    // 7. Save Import Lote
+    const btnSaveImport = e.target.closest('#btn-save-import-env');
+    if (btnSaveImport) {
+      const txt = document.getElementById('textarea-import-env-lote');
+      const lines = txt.value.split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx <= 0) continue;
+        const key = trimmed.slice(0, eqIdx).trim();
+        const value = trimmed.slice(eqIdx + 1).trim();
+
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key)) continue;
+
+        const existing = envVarsList.find(v => v.key === key);
+        if (existing) {
+          existing.value = value;
+        } else {
+          envVarsList.push({ key, value, revealed: false });
+        }
+      }
+
+      serialize();
+      render();
+      document.getElementById('modal-import-env-lote').dataset.open = 'false';
+      return;
+    }
+  });
+
+  parseInitial();
+  render();
+})();
+</script>

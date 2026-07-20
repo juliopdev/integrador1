@@ -1,0 +1,57 @@
+// Punto de compilación de los portales de autenticación (login/activación). → public/styles/auth.css.
+// Aquí vive el **layout** propio de auth (`l-auth`, `l-auth-card`); el dashboard tiene el suyo en
+// dashboard.scss. Los `_index.scss` de cada feature solo llevan estilos de SUS páginas (sin layouts
+// ni componentes). Ver scss.md.
+
+@use 'themes/theme-manager' as theme;
+@use 'themes/default' as default;
+@use 'themes/minimalist' as minimalist;
+@use 'themes/glassmorphism' as glassmorphism;
+@use '../components' as c;
+@use 'shared/animations';
+@use 'shared/helpers';
+
+@include theme.reset;
+@include theme.apply(default.$theme);
+@include theme.apply(minimalist.$theme);
+@include theme.apply(glassmorphism.$theme);
+
+@include theme.subscribe(c.button-ui(), c.icon-ui(), c.card-ui(), c.alert-ui(), c.spinner-ui(), c.input-ui(), c.toast-ui(), c.form-ui());
+
+// ── Layout del portal de auth ─────────────────────────────────────────
+.l-auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-4);
+  background: var(--color-bg);
+}
+
+.l-auth-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 380px;
+  padding: var(--space-8);
+  background-color: var(--color-surface);
+  backdrop-filter: var(--backdrop-filter);
+  -webkit-backdrop-filter: var(--backdrop-filter);
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+
+  &__title { font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); color: var(--color-text); }
+  &__subtitle { font-size: var(--font-size-sm); }
+
+  // Marca sobre el título: ancla la página a la identidad del portal (Mi Baas / tenant).
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary-600);
+  }
+}

@@ -1,0 +1,24 @@
+<%
+  const action = locals.action || '';
+  const method = locals.method || 'POST';
+  const id = locals.id || '';
+  const className = locals.class || '';
+  const redirect = locals.redirect || '';
+  const dataMethod = locals.dataMethod || '';
+  const dataConfirm = locals.dataConfirm || '';
+  const dataAutosubmit = locals.dataAutosubmit || false;
+  const body = locals.body || '';
+%>
+<form
+  class="c-form <%= className %>"
+  action="<%= action %>"
+  method="<%= method %>"
+  <% if (id) { %>id="<%= id %>"<% } %>
+  <% if (redirect) { %>data-redirect="<%= redirect %>"<% } %>
+  <% if (dataMethod) { %>data-method="<%= dataMethod %>"<% } %>
+  <% if (dataConfirm) { %>data-confirm="<%= dataConfirm %>"<% } %>
+  <% if (dataAutosubmit) { %>data-autosubmit<% } %>
+  novalidate
+>
+  <%- body %>
+</form>

@@ -1,82 +1,62 @@
-import bcrypt from 'bcryptjs';
+import { uuidv7 } from '../../../common/id.js';
+import { DomainError } from '../../../common/errors.js';
 
 /**
- * ES: Caso de Uso para el registro de Usuarios Finales (Headless API).
- * Verifica si el registro de API está habilitado; de lo contrario, retorna un error 503.
- * 
- * EN: Use Case for End-User registration (Headless API).
- * Checks if API registration is enabled; otherwise, returns a 503 error.
+ * Fábrica para el caso de uso que registra a un nuevo usuario final (end-user) en el tenant.
+ * Autoprovisiona el rol de cliente final 'user' con permisos vacíos en caso de que falte en el tenant,
+ * hashea la contraseña del usuario y crea su perfil local con estado activo.
+ *
+ * @param {Object} deps - Dependencias de registro.
+ * @param {Object} deps.userRepository - Repositorio de usuarios del tenant space.
+ * @param {Object} deps.hasher - Proveedor de hashing de contraseñas.
+ * @param {function(string): Promise<string>} deps.hasher.hash - Método para generar hash de contraseñas.
+ * @param {Function} [deps.onRegisterSuccess] - Callback opcional tras registro exitoso.
+ * @param {(p: { userId: string, email: string, passwordHash: string }) => Promise<void>} [deps.onRegisterSuccess] - Firma del callback.
+ * @param {() => number} [deps.now] - Generador opcional de marcas de tiempo.
+ * @returns {(params: { email: string, password: string }) => Promise<{ userId: string, email: string }>} Función de caso de uso.
+ * @throws {DomainError} EMAIL_TAKEN - Si ya existe un usuario con ese correo en el tenant.
  */
-export class RegisterUserUseCase {
+export function makeRegisterUser({ userRepository, hasher, onRegisterSuccess, now = () => Date.now() }) {
   /**
-   * @param {Object} cradle 
-   * @param {import('../infrastructure/user.repository').UserRepository} cradle.userRepository 
-   * @param {import('../../../kernel/container/di-register/auth/jwt.module').TokenService} cradle.tokenService
-   * @param {Object} cradle.tenant
+   * Registra un nuevo usuario final en el tenant.
+   * Normaliza el email, verifica unicidad, auto-provisiona el rol `user` si es necesario,
+   * hashea la contraseña y persiste el usuario con estado activo.
+   * @param {Object} params - Datos de registro.
+   * @param {string} params.email - Correo del nuevo usuario.
+   * @param {string} params.password - Contraseña (mínimo 8 caracteres según schema).
+   * @returns {Promise<{ userId: string, email: string }>} Identificador y email del usuario creado.
+   * @throws {DomainError} EMAIL_TAKEN - Si el email ya está registrado en este tenant.
    */
-  constructor({ userRepository, tokenService, tenant }) {
-    this.userRepository = userRepository;
-    this.tokenService = tokenService;
-    this.tenant = tenant;
-  }
-
-  /**
-   * ES: Ejecuta el registro del nuevo usuario final.
-   * EN: Runs the new end-user registration flow.
-   * 
-   * @param {Object} registrationData 
-   * @param {string} registrationData.email 
-   * @param {string} registrationData.password 
-   * @returns {Promise<Object>}
-   */
-  async execute({ email, password }) {
-    // ES: Comprobar el estado apiAuthEnabled del inquilino.
-    // EN: Verify tenant apiAuthEnabled status.
-    if (!this.tenant || this.tenant.apiAuthEnabled === 0) {
-      const error = new Error('API registration is disabled for this tenant / Registro de API deshabilitado para este inquilino');
-      error.statusCode = 503;
-      throw error;
+  return async function registerUser({ email, password }) {
+    const normalizedEmail = String(email ?? '').trim().toLowerCase();
+    if (userRepository.findByEmail(normalizedEmail)) {
+      throw new DomainError('EMAIL_TAKEN', 'Ya existe un usuario con ese correo en este tenant.');
     }
 
-    // ES: Verificar si el correo electrónico ya existe en el espacio del inquilino.
-    // EN: Verify if email already exists in the tenant space.
-    const existing = await this.userRepository.findByEmail(email);
-    if (existing) {
-      throw new Error('Email is already registered / El correo ya está registrado');
+    // Rol `user` auto-provisionado en el tenant (categoría user). Si el Superadmin no lo definió
+    // en el asistente, se crea acá al primer registro (permisos vacíos por default).
+    let role = userRepository.findUserRoleByName('user');
+    if (!role) {
+      role = userRepository.createUserRole({ name: 'user', category: 'user', now: now() });
     }
 
-    // ES: Cifrado Hash de contraseña.
-    // EN: Hash password using bcrypt.
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // ES: Registrar usuario final en base de datos.
-    // EN: Write end-user into database.
-    const user = await this.userRepository.create({
-      email,
-      password: hashedPassword,
-      role: 'user',
+    const userId = uuidv7();
+    const ts = now();
+    const passwordHash = await hasher.hash(password);
+    userRepository.insertUser({
+      id: userId,
+      email: normalizedEmail,
+      passwordHash,
+      authProvider: 'local',
       status: 'active',
+      now: ts,
     });
+    userRepository.assignRole({ userId, roleId: role.id, now: ts });
 
-    const payload = {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      tenantId: this.tenant.id,
-    };
+    if (onRegisterSuccess) {
+      await onRegisterSuccess({ userId, email: normalizedEmail, passwordHash });
+    }
 
-    const accessToken = this.tokenService.signAccessToken(payload);
-    const refreshToken = this.tokenService.signRefreshToken(payload);
-
-    return {
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
-      accessToken,
-      refreshToken,
-    };
-  }
+    return { userId, email: normalizedEmail };
+  };
 }

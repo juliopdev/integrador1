@@ -1,0 +1,30 @@
+<%
+  // Interfaz de inclusión: `stat` — métrica con número grande, delta opcional y variante
+  // semántica por umbral.
+  //
+  // Historia:
+  //   - Iter 2026-07 (rename): antes se llamaba `stat-card`. El nombre confundía con `card`
+  //     (contenedor con header/body/footer) — son componentes distintos. Se corrigió al renombrar
+  //     y se expuso `valueVariant` que el SCSS ya soportaba.
+  //   - Iter 2026-07 (slot threshold): se agregó `thresholdHtml` como slot inferior — HTML de
+  //     confianza que el contenedor pinta debajo del delta (típicamente un badge de rango:
+  //     "Umbral crítico", "Normal", etc. — usado por widgets con métricas graduadas: RAM, CPU).
+  //     Antes esto se hacía escribiendo `<div class="c-stat">` inline en la sección, violando
+  //     la regla de ejs.md ("las páginas y secciones sólo usan include(...), nunca clases BEM").
+  const label = locals.label || '';
+  const value = locals.value ?? '';
+  const delta = locals.delta || null;                    // e.g. '+3 hoy' o '-1'
+  const deltaVariant = locals.deltaVariant || 'neutral'; // success | error | neutral
+  const valueVariant = locals.valueVariant || null;      // success | warning | danger — color del NÚMERO por umbral
+  const thresholdHtml = locals.thresholdHtml || null;    // HTML de confianza (badge de rango, footer del stat)
+%>
+<div class="c-stat">
+  <span class="c-stat__label"><%= label %></span>
+  <span class="c-stat__value<%= valueVariant ? ` c-stat__value--${valueVariant}` : '' %>"><%= value %></span>
+  <% if (delta) { %>
+    <span class="c-stat__delta c-stat__delta--<%= deltaVariant %>"><%= delta %></span>
+  <% } %>
+  <% if (thresholdHtml) { %>
+    <div class="l-stat__threshold"><%- thresholdHtml %></div>
+  <% } %>
+</div>

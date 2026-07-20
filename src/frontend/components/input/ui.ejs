@@ -1,0 +1,60 @@
+<%
+  const name = locals.name || '';
+  const type = locals.type || 'text'; // text | email | password | number | date | tel | color
+  const label = locals.label || '';
+  const value = locals.value || '';
+  const placeholder = locals.placeholder || '';
+  const error = locals.error || null;
+  const required = locals.required || false;
+  const disabled = locals.disabled || false;
+  const id = locals.id || ('field-' + name);
+  const prefix = locals.prefix || null;
+  const suffix = locals.suffix || null;
+  const icon = locals.icon || null;
+  const autocomplete = locals.autocomplete || null;
+%>
+<div class="c-input" data-invalid="<%= error ? 'true' : 'false' %>" <% if (disabled) { %>data-disabled="true"<% } %>>
+  <% if (label) { %>
+    <label class="c-input__label" for="<%= id %>"><%= label %></label>
+  <% } %>
+  <div class="c-input__wrapper <%= prefix ? 'c-input__wrapper--has-prefix' : '' %>">
+    <% if (prefix) { %>
+      <span class="c-input__prefix"><%= prefix %></span>
+    <% } %>
+    
+    <% if (icon) { %>
+      <span class="c-input__icon">
+        <%- include('frontend/components/icon/ui', { name: icon, size: 'sm' }) %>
+      </span>
+    <% } %>
+
+    <input
+      class="c-input__field <%= suffix ? 'c-input__field--has-suffix' : '' %> <%= icon ? 'c-input__field--has-icon' : '' %>"
+      id="<%= id %>"
+      name="<%= name %>"
+      type="<%= type %>"
+      value="<%= value %>"
+      placeholder="<%= placeholder %>"
+      <% if (autocomplete) { %>autocomplete="<%= autocomplete %>"<% } %>
+      <% if (required) { %>required<% } %>
+      <% if (disabled) { %>disabled<% } %>
+    />
+
+    <% if (type === 'password' && !disabled) { %>
+      <button type="button" class="c-input__password-toggle" aria-label="Toggle password visibility">
+        <svg class="c-icon c-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    <% } %>
+
+    <% if (suffix) { %>
+      <span class="c-input__suffix"><%= suffix %></span>
+    <% } %>
+  </div>
+  
+  <span class="c-input__error">
+    <% if (error) { %>
+      <svg class="c-icon c-icon--xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <%= error %>
+    <% } %>
+  </span>
+</div>

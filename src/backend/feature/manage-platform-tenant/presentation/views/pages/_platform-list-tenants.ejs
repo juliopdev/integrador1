@@ -1,0 +1,23 @@
+<%
+  // Página delgada (views.md §2, §7): frame + sección. Con `action` — Tenants es la única
+  // pantalla donde el Superadmin da de alta un tenant, así que el botón principal vive arriba.
+  const tenantsList = locals.tenants || [];
+%>
+<div class="u-flex u-flex-col u-gap-md">
+  <%- include('backend/common/views/sections/_dashboard-page-frame', {
+    breadcrumb: [
+      { label: 'Inicio', href: '/dashboard' },
+      { label: 'Tenants' },
+    ],
+    title: 'Tenants',
+    subtitle: 'Administra los proyectos, contratos y accesos de los tenants en la plataforma.',
+    action: {
+      label: 'Crear tenant',
+      icon: 'plus',
+      href: '/dashboard/tenants/create',
+      variant: 'primary',
+    },
+    currentPath: locals.currentPath,
+  }) %>
+  <%- include('backend/feature/manage-platform-tenant/presentation/views/sections/_list-tenants', locals) %>
+</div>

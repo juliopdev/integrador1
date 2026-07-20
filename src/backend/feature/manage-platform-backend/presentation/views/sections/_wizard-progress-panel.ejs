@@ -1,0 +1,86 @@
+<%
+  // Sección reutilizable (views.md): panel lateral del asistente. La derivación de "hecho"
+  // vive acá (lógica de dominio del wizard); el layout/HTML lo pone `frontend/components/stepper`
+  // (Iter 34). Sin estado paralelo — todo se computa desde `wizardState`.
+  const t = locals.activeTenant || {};
+  const currentStep = locals.currentStep || 'start';
+  const state = locals.wizardState || {};
+  const draft = state.draftContract || null;
+  const pub = state.publishedContract || null;
+
+  // Reglas de "hecho" — Iter UX P2.6:
+  //
+  // Sin draft en curso, el stepper NO refleja el estado del contrato publicado. Los pasos son
+  // sobre el DRAFT — y si el draft no existe, ningún paso se hizo, sin importar cuán complejo
+  // sea el publicado. Antes el stepper mezclaba las dos fuentes y mostraba pasos como "done"
+  // que en realidad reflejaban el publicado, dando la ilusión de progreso que confundía al
+  // operador (parecía que ya había hecho X cuando aún no había arrancado). Ahora la regla es
+  // simple: sin draft → todo pending; con draft → done según el contenido del draft.
+  //
+  // Excepción: el paso `version` cuenta como done cuando el draft ya eligió `versionMode`
+  // (edit/upgrade) — señal de que la decisión inicial se tomó.
+  const targetContract = draft || pub;
+  const targetResources = targetContract?.schema?.resources || [];
+  const targetWsChannels = (targetContract?.schema?.websocket?.channels || []).length;
+
+  const done = targetContract ? {
+    version: Boolean(targetContract.schema?.versionMode || pub),
+    provider: Boolean(state.hasProviders),
+    role: (state.roles || []).length > 0,
+    api: targetResources.length > 0,
+    data: targetResources.some((r) => (r.fields || []).length > 0),
+    ws: targetWsChannels > 0,
+    finish: Boolean(pub && !draft),
+  } : {
+    version: false,
+    provider: false,
+    role: false,
+    api: false,
+    data: false,
+    ws: false,
+    finish: false,
+  };
+
+  const stepDefs = [
+    { id: 'version',  label: 'Versión' },
+    { id: 'provider', label: 'Proveedores' },
+    { id: 'role',     label: 'Roles' },
+    { id: 'api',      label: 'Resources & endpoints' },
+    { id: 'data',     label: 'Data' },
+    { id: 'ws',       label: 'WebSocket' },
+    { id: 'finish',   label: 'Compilar y deploy' },
+  ];
+
+  const currentIdx = stepDefs.findIndex((s) => s.id === currentStep);
+  // Navegación:
+  // - Sin draft (Iter UX P2.6): el stepper es puro indicador. Ningún paso lleva href — el
+  //   operador todavía no eligió qué hacer (editar / upgrade / rollback / eliminar) desde las
+  //   cards del Paso 1. Habilitar navegación acá sería llevarlo a formularios de un draft que
+  //   no existe.
+  // - Con draft (Iter UX P1.6): navegable = anteriores al actual (para retroceder) + posteriores
+  //   YA hechos (para saltar hacia adelante). El "próximo paso" sólo debe forzar linealidad
+  //   cuando el paso aún no fue completado.
+  const items = stepDefs.map((s, idx) => {
+    const isDone = Boolean(done[s.id]);
+    const isCurrent = s.id === currentStep;
+    const isNavigable = !isCurrent && (idx < currentIdx || isDone);
+    return {
+      id: s.id,
+      label: s.label,
+      ...(isNavigable ? { href: `/dashboard/backends/${t.id}?step=${s.id}` } : {}),
+      state: isCurrent ? 'current' : (isDone ? 'done' : 'pending'),
+    };
+  });
+  const totalDone = items.filter((it) => it.state === 'done' || it.state === 'current').length;
+%>
+
+<aside class="wizard-aside" aria-label="Progreso del asistente">
+  <%
+    const stepperHtml = include('frontend/components/stepper/ui', {
+      items,
+      progress: { current: totalDone, total: items.length },
+      ariaLabel: 'Progreso del asistente',
+    });
+  %>
+  <%- include('frontend/components/card/ui', { body: stepperHtml, padding: 'md' }) %>
+</aside>

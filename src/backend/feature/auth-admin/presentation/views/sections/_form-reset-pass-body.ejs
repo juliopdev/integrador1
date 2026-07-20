@@ -1,0 +1,39 @@
+<%
+  const error = locals.error || null;
+  const token = locals.token || '';
+
+  const brandHtml = `
+    <div class="l-auth-card__brand">
+      ${include('frontend/components/icon/ui', { name: 'bolt', size: 'lg' })}
+      <span>${locals.brandTitle || 'Mi Baas'}</span>
+    </div>
+  `;
+
+  const alertHtml = error ? include('frontend/components/alert/ui', { variant: 'error', message: error }) : '';
+  const missingTokenAlert = !token
+    ? include('frontend/components/alert/ui', { variant: 'error', message: 'Enlace inválido: falta el token. Solicitá uno nuevo.' })
+    : '';
+  const passField = include('frontend/components/input/ui', {
+    name: 'password', type: 'password', label: 'Nueva contraseña (mínimo 8 caracteres)',
+    required: true, autocomplete: 'new-password',
+  });
+  const submitBtn = include('frontend/components/button/ui', {
+    type: 'submit', variant: 'primary', label: 'Actualizar contraseña', class: 'u-w-full', disabled: true,
+  });
+  const backLink = `<p class="l-auth-card__subtitle u-text-muted"><a class="u-link" href="/dashboard/login">← Volver a iniciar sesión</a></p>`;
+
+  const fieldsHtml = token ? `
+    <h1 class="l-auth-card__title">Nueva contraseña</h1>
+    <p class="l-auth-card__subtitle u-text-muted">La frase de paso se mantiene intacta.</p>
+    ${alertHtml}
+    <input type="hidden" name="token" value="${token}" />
+    ${passField}
+    ${submitBtn}
+    ${backLink}
+  ` : `
+    <h1 class="l-auth-card__title">Enlace inválido</h1>
+    ${missingTokenAlert}
+    <p class="l-auth-card__subtitle u-text-muted"><a class="u-link" href="/dashboard/forgot-pass">Solicitar otro enlace →</a></p>
+    ${backLink}
+  `;
+%><%- brandHtml + fieldsHtml %>

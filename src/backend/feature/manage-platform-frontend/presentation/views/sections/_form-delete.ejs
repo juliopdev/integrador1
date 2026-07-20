@@ -1,0 +1,7 @@
+<%
+  const tenant = locals.tenant || {};
+  const escHtml = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+%>
+<form class="c-form" method="post" action="/api-system/v1/frontends/<%= escHtml(tenant.id) %>" data-method="delete" data-redirect="/dashboard/frontends" data-confirm="¿Eliminar la configuración de frontend de <%= escHtml(tenant.subdomain) %>? Caddy dejará de redirigir el subdominio.">
+  <%- include('frontend/components/button/ui', { type: 'submit', variant: 'ghost', size: 'sm', label: 'Eliminar configuración' }) %>
+</form>

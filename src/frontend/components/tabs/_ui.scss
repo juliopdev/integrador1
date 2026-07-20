@@ -1,0 +1,48 @@
+@use 'sass:meta';
+
+@mixin styles {
+  .c-tabs {
+    border-bottom: var(--border-thin) solid var(--color-border);
+    width: 100%;
+
+    &__list {
+      display: flex;
+      gap: var(--space-4);
+      margin-bottom: -1px;
+    }
+
+    &__tab {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: var(--space-3) var(--space-1);
+      font-family: var(--font-sans);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: color var(--duration-fast) var(--easing-standard),
+                  border-color var(--duration-fast) var(--easing-standard);
+
+      &:hover {
+        color: var(--color-text);
+        border-bottom-color: var(--color-border-strong);
+      }
+
+      &--active {
+        color: var(--color-primary-600);
+        border-bottom-color: var(--color-primary-600);
+        font-weight: var(--font-weight-bold);
+
+        &:hover {
+          color: var(--color-primary-600);
+          border-bottom-color: var(--color-primary-600);
+        }
+      }
+    }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

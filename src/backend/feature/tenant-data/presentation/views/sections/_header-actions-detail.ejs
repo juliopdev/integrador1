@@ -1,0 +1,20 @@
+<%
+  const r = locals.resource || {};
+%>
+<div class="u-flex u-gap-xs">
+  <%- include('frontend/components/button/ui', {
+    label: 'Importar registros',
+    icon: 'send',
+    variant: 'secondary',
+    size: 'sm',
+    action: 'modal:open',
+    target: 'import-csv-modal'
+  }) %>
+  <%- include('frontend/components/button/ui', {
+    label: 'Nuevo registro',
+    icon: 'plus',
+    href: `/dashboard/data/${r.name}/create`,
+    variant: 'primary',
+    size: 'sm',
+  }) %>
+</div>

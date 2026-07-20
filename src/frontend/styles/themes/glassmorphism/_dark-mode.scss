@@ -1,21 +1,45 @@
-/**
- * ES: Mixin de variables de modo oscuro para Glassmorphism.
- */
-@mixin glassmorphism-dark {
-  --bg-color: #0b0f19;
-  --bg-gradient: radial-gradient(circle at center, #1b1338 0%, #080710 100%);
-  --text-color: #f3f4f6;
-  --text-muted: #9ca3af;
-  --card-bg: rgba(17, 24, 39, 0.6);
-  --card-border: rgba(255, 255, 255, 0.08);
-  --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  --accent-color: #8b5cf6;
-  --accent-hover: #7c3aed;
-  --accent-glow: rgba(139, 92, 246, 0.3);
-  --input-bg: rgba(0, 0, 0, 0.25);
-  --input-border: rgba(255, 255, 255, 0.1);
-  --input-focus-border: #8b5cf6;
-  --glass-blur: blur(16px);
-  --transition-fast: all 0.15s ease;
-  --danger: #ef4444;
-}
+// Tema glassmorphism — modo OSCURO.
+// Mismas keys que light-mode, con valores optimizados para pantallas oscuras y translúcidas.
+
+$dark-mode: (
+  // Mesh oscuro con núcleos índigo/violeta/cian visibles: da al blur algo que difuminar.
+  'color-bg': (
+    radial-gradient(circle at 12% 15%, rgba(79, 70, 229, 0.45) 0%, transparent 50%),
+    radial-gradient(circle at 88% 10%, rgba(168, 85, 247, 0.3) 0%, transparent 40%),
+    radial-gradient(circle at 78% 88%, rgba(34, 211, 238, 0.22) 0%, transparent 45%),
+    linear-gradient(160deg, #0b0d1f 0%, #05060f 100%)
+  ),
+
+  // Superficies oscuras translúcidas (más abiertas para que el mesh se perciba tras el cristal)
+  'color-surface': rgba(13, 15, 32, 0.52), // Slate/Indigo ultra oscuro translúcido
+  'color-surface-raised': rgba(25, 27, 48, 0.64), // Capa elevada ligeramente más clara
+  'color-surface-solid': rgba(16, 18, 36, 0.94), // Modal: casi opaco para legibilidad
+  'color-overlay': rgba(0, 0, 0, 0.5),
+  'color-scrim': rgba(0, 0, 0, 0.75),
+
+  // Texto
+  'color-text': #f8fafc,
+  'color-text-muted': #94a3b8,
+
+  // Bordes sutiles oscuros y reflectantes (un poco más perceptibles para definición)
+  'color-border': rgba(255, 255, 255, 0.12),
+  'color-border-strong': rgba(255, 255, 255, 0.22),
+
+  // Marca (escala Indigo/Violeta brillante)
+  'color-primary-50': #1e1b4b,
+  'color-primary-100': #312e81,
+  'color-primary-500': #818cf8,
+  'color-primary-600': #6366f1,
+  'color-primary-700': #4f46e5,
+  'color-primary-bg': linear-gradient(135deg, #818cf8 0%, #6366f1 100%),
+  'color-primary-bg-hover': linear-gradient(135deg, #6366f1 0%, #4f46e5 100%),
+
+  // On-colors (contraste)
+  'color-on-primary': #ffffff,
+  'color-on-surface': #f8fafc,
+  'color-on-inverse': #f8fafc,
+
+  // Foco / skeleton
+  'color-focus-ring': rgba(129, 140, 248, 0.4),
+  'color-skeleton': rgba(255, 255, 255, 0.05),
+);

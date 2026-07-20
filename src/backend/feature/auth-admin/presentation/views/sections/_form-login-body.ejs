@@ -1,0 +1,61 @@
+<%
+  const error = locals.error || null;
+  const token = locals.token || null;
+  const activated = locals.activated || false;
+
+  const brandHtml = `
+    <div class="l-auth-card__brand">
+      ${include('frontend/components/icon/ui', { name: 'bolt', size: 'lg' })}
+      <span>${locals.brandTitle || 'Mi Baas'}</span>
+    </div>
+  `;
+
+  let fieldsHtml = '';
+  if (token) {
+    const alertHtml = error ? include('frontend/components/alert/ui', { variant: 'error', message: error }) : '';
+    const passField = include('frontend/components/input/ui', { name: 'password', type: 'password', label: 'Nueva Contraseña', required: true, autocomplete: 'new-password' });
+    const phraseField = include('frontend/components/input/ui', { name: 'passphrase', type: 'password', label: 'Frase de paso (mínimo 12 caracteres)', required: true, autocomplete: 'new-password' });
+    const submitBtn = include('frontend/components/button/ui', { type: 'submit', variant: 'primary', label: 'Activar cuenta', class: 'u-w-full', disabled: true });
+    const backLink = `<p class="l-auth-card__subtitle u-text-muted"><a class="u-link" href="/dashboard/login">← Volver a iniciar sesión</a></p>`;
+    
+    fieldsHtml = `
+      <h1 class="l-auth-card__title">Definir credenciales</h1>
+      <p class="l-auth-card__subtitle u-text-muted">Activa tu cuenta configurando tu contraseña y frase de paso.</p>
+      ${alertHtml}
+      <input type="hidden" name="token" value="${token}" />
+      ${passField}
+      ${phraseField}
+      ${submitBtn}
+      ${backLink}
+    `;
+  } else {
+    const forgotSent = locals.forgotSent || false;
+    const resetDone = locals.reset || false;
+    const successHtml = activated ? include('frontend/components/alert/ui', { variant: 'success', message: '¡Cuenta activada con éxito! Ya puedes iniciar sesión.' }) : '';
+    const forgotBanner = forgotSent ? include('frontend/components/alert/ui', { variant: 'success', message: 'Si el correo existe, te enviamos un enlace para recuperar el acceso.' }) : '';
+    const resetBanner = resetDone ? include('frontend/components/alert/ui', { variant: 'success', message: 'Contraseña actualizada. Ya puedes iniciar sesión.' }) : '';
+    const alertHtml = error ? include('frontend/components/alert/ui', { variant: 'error', message: error }) : '';
+    const emailField = include('frontend/components/input/ui', { name: 'email', type: 'email', label: 'Correo', required: true, autocomplete: 'email' });
+    const passField = include('frontend/components/input/ui', { name: 'password', type: 'password', label: 'Contraseña', required: true, autocomplete: 'current-password' });
+    const phraseField = include('frontend/components/input/ui', { name: 'passphrase', type: 'password', label: 'Frase de paso', required: true, autocomplete: 'off' });
+    const submitBtn = include('frontend/components/button/ui', { type: 'submit', variant: 'primary', label: 'Entrar', class: 'u-w-full', disabled: true });
+    const forgotLink = `<p class="l-auth-card__subtitle u-text-muted"><a class="u-link" href="/dashboard/forgot-pass">¿Olvidaste tu contraseña?</a></p>`;
+
+    fieldsHtml = `
+      <h1 class="l-auth-card__title">Iniciar sesión</h1>
+      <p class="l-auth-card__subtitle u-text-muted">Accede a tu panel de administración.</p>
+      ${successHtml}
+      ${forgotBanner}
+      ${resetBanner}
+      ${alertHtml}
+      ${emailField}
+      ${passField}
+      ${phraseField}
+      ${submitBtn}
+      ${forgotLink}
+    `;
+  }
+
+  // Se retorna el cuerpo completo de la marca y campos
+  const formBody = brandHtml + fieldsHtml;
+%><%- formBody %>

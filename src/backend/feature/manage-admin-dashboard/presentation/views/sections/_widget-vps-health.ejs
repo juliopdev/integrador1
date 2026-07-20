@@ -1,0 +1,74 @@
+<%
+  const h = locals.health || {};
+  const s = h.system || {};
+  const mem = s.memory || {};
+
+  const fmtBytes = (b) => {
+    if (!b) return '0 B';
+    const u = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let i = 0; let n = Number(b);
+    while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+    return `${n.toFixed(i > 0 ? 1 : 0)} ${u[i]}`;
+  };
+  const fmtUptime = (sec) => {
+    if (!sec) return '—';
+    const d = Math.floor(sec / 86400), h2 = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
+    if (d > 0) return `${d}d ${h2}h`;
+    if (h2 > 0) return `${h2}h ${m}m`;
+    return `${m}m`;
+  };
+
+  // Iter UX: umbrales de RAM. <70% verde OK, 70-90% warn, >90% crítico. El color del número
+  // hace visible al toque el estado; el badge explica el rango para no dejar al operador
+  // adivinando "¿93% es alto o normal?".
+  const ramPct = mem.usagePct ?? 0;
+  const ramVariant = ramPct >= 90 ? 'danger' : ramPct >= 70 ? 'warning' : 'success';
+  const ramBadge = ramPct >= 90
+    ? `<span class="c-badge c-badge--danger">Umbral crítico (>90%)</span>`
+    : ramPct >= 70
+      ? `<span class="c-badge c-badge--warning">Uso alto (>70%)</span>`
+      : `<span class="c-badge c-badge--success">Normal</span>`;
+
+  // Umbrales de CPU load: por rule of thumb sano `loadavg1 <= cores` es OK. Damos un margen del
+  // 20% antes de warn. En una máquina de 8 cores: <8 verde, 8-10 warn, >10 rojo.
+  const loadRaw = s.cpu?.loadavg1 ?? 0;
+  const cores = s.cpu?.cores || 1;
+  const loadRatio = loadRaw / cores;
+  const cpuVariant = loadRatio >= 1.25 ? 'danger' : loadRatio >= 1 ? 'warning' : 'success';
+  const cpuBadge = loadRatio >= 1.25
+    ? `<span class="c-badge c-badge--danger">Sobrecarga (>${(cores * 1.25).toFixed(1)})</span>`
+    : loadRatio >= 1
+      ? `<span class="c-badge c-badge--warning">Carga alta</span>`
+      : `<span class="c-badge c-badge--success">Normal</span>`;
+
+  let bodyContent = `
+    <div class="l-home-widget__stats-2">
+      ${include('frontend/components/stat/ui', {
+        label: 'Memoria RAM',
+        value: `${ramPct}%`,
+        valueVariant: ramVariant,
+        delta: `${fmtBytes(mem.usedBytes)} / ${fmtBytes(mem.totalBytes)}`,
+        thresholdHtml: ramBadge,
+      })}
+      ${include('frontend/components/stat/ui', {
+        label: 'Carga CPU (Load)',
+        value: loadRaw.toFixed(2),
+        valueVariant: cpuVariant,
+        delta: `5m: ${(s.cpu?.loadavg5 ?? 0).toFixed(2)} · 15m: ${(s.cpu?.loadavg15 ?? 0).toFixed(2)}`,
+        thresholdHtml: cpuBadge,
+      })}
+    </div>
+    <div class="l-home-widget__tech-details">
+      <div class="l-tech-detail"><strong>Hostname:</strong> <span>${s.hostname || 'unknown'}</span></div>
+      <div class="l-tech-detail"><strong>Plataforma:</strong> <span>${s.platform || 'unknown'} (${s.arch || 'unknown'})</span></div>
+      <div class="l-tech-detail"><strong>Procesador:</strong> <span>${s.cpu?.cores || '—'} cores</span></div>
+    </div>
+  `;
+%>
+<%- include('frontend/components/card/ui', {
+  title: 'Salud del VPS',
+  headerActions: `<a class="l-home-widget__link" href="/dashboard/health">${include('frontend/components/icon/ui', { name: 'activity', size: 'sm' })} Ver todo →</a>`,
+  body: bodyContent,
+  footer: `Uptime del proceso: ${fmtUptime(s.uptimeSec)} · Node: ${s.nodeVersion || '?'}`,
+  padding: 'md'
+}) %>

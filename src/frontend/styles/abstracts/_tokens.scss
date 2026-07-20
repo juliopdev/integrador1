@@ -1,0 +1,15 @@
+// Allowlist de tokens: la lista de keys PERMITIDAS por grupo, **derivada** de las keys del tema
+// default (no se mantiene a mano → sin drift). La consume `_sanitize-theme` para rechazar con @warn
+// tokens que un tema intente inventar. Los VALORES viven en themes/default/. Ver scss.md.
+
+@use 'sass:map';
+@use '../themes/default' as default;
+
+$allowlist: (
+  'theme-name': 'default',
+  'light-mode': map.keys(map.get(default.$theme, 'light-mode')),
+  'dark-mode': map.keys(map.get(default.$theme, 'dark-mode')),
+  'measures': map.keys(map.get(default.$theme, 'measures')),
+  'typefaces': map.keys(map.get(default.$theme, 'typefaces')),
+  'animations': map.keys(map.get(default.$theme, 'animations')),
+);

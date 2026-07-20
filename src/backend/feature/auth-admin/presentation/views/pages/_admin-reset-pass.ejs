@@ -1,15 +1,7 @@
-<div class="auth-page">
-  <div class="auth-card">
-    <div class="auth-card__header">
-      <h1 class="auth-card__title">Nueva Contraseña</h1>
-      <p class="auth-card__subtitle">Elige una contraseña segura para tu cuenta</p>
-    </div>
-    <form class="auth-card__form" action="/dashboard/reset-password" method="POST">
-      <div class="auth-card__group">
-        <label class="auth-card__label" for="password">Nueva Contraseña</label>
-        <input class="auth-card__input" type="password" id="password" name="password" required placeholder="••••••••" />
-      </div>
-      <button type="submit" class="auth-card__button">Establecer Contraseña</button>
-    </form>
-  </div>
-</div>
+<%- include('frontend/components/form/ui', {
+  class: 'l-auth-card',
+  method: 'post',
+  action: '/api-system/v1/reset-pass',
+  redirect: '/dashboard/login?reset=1',
+  body: include('backend/feature/auth-admin/presentation/views/sections/_form-reset-pass-body', locals)
+}) %>

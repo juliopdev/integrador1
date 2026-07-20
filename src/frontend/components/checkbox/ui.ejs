@@ -1,0 +1,39 @@
+<%
+  // Checkbox/Switch custom por tokens (se adapta a los 3 temas; el nativo no es tematizable).
+  //
+  // API:
+  //   name:      name del input (requerido)
+  //   label:     texto visible (opcional — si falta, pasar ariaLabel)
+  //   value:     value del input (default 'true')
+  //   checked:   boolean (default false)
+  //   disabled:  boolean (default false)
+  //   variant:   'box' | 'switch' (default 'box')
+  //   id:        default 'check-' + name
+  //   ariaLabel: para usos sin label visible
+  //   class:     clases extra sobre el <label> raíz
+  //
+  // Sin hidden gemelo: desmarcado = key ausente (los schemas defaultean false — ver P0.2).
+  const name = locals.name || '';
+  const label = locals.label || '';
+  const value = locals.value || 'true';
+  const checked = locals.checked || false;
+  const disabled = locals.disabled || false;
+  const variant = locals.variant || 'box';
+  const id = locals.id || ('check-' + name);
+  const ariaLabel = locals.ariaLabel || null;
+  const customClass = locals.class || '';
+%>
+<label class="c-checkbox c-checkbox--<%= variant %><%= disabled ? ' c-checkbox--disabled' : '' %> <%= customClass %>" for="<%= id %>">
+  <input
+    class="c-checkbox__input"
+    type="checkbox"
+    id="<%= id %>"
+    name="<%= name %>"
+    value="<%= value %>"
+    <% if (checked) { %>checked<% } %>
+    <% if (disabled) { %>disabled<% } %>
+    <% if (ariaLabel) { %>aria-label="<%= ariaLabel %>"<% } %>
+  />
+  <span class="c-checkbox__control" aria-hidden="true"></span>
+  <% if (label) { %><span class="c-checkbox__label"><%= label %></span><% } %>
+</label>

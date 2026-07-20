@@ -1,26 +1,81 @@
-@use 'glassmorphism/dark-mode' as glassmorphism-dark-mode;
-@use 'glassmorphism/light-mode' as glassmorphism-light-mode;
-@use 'minimalist/dark-mode' as minimalist-dark-mode;
-@use 'minimalist/light-mode' as minimalist-light-mode;
+// Orquestador de temas (scss.md, styles.md). Tres entradas: reset, apply($theme,$skin), subscribe.
+@use 'sass:map';
+@use 'sass:list';
+@use 'sass:meta';
+@use 'default' as default;
+@use '../abstracts/tokens' as tokens;
+@use '../abstracts/reset' as reset;
 
-/**
- * ES: Manejador de Temas.
- * Mapea los mixins de variables de modo claro y oscuro a cada clase de tema correspondiente.
- */
-.theme-glassmorphism {
-  &[data-theme="dark"], &:not([data-theme]) {
-    @include glassmorphism-dark-mode.glassmorphism-dark;
-  }
-  &[data-theme="light"] {
-    @include glassmorphism-light-mode.glassmorphism-light;
+// Emite cada par del mapa como custom property (`--key: value;`).
+@mixin _emit($map) {
+  @each $key, $value in $map {
+    --#{$key}: #{$value};
   }
 }
 
-.theme-minimalist {
-  &[data-theme="dark"], &:not([data-theme]) {
-    @include minimalist-dark-mode.minimalist-dark;
+// Descarta (con @warn) las keys que no estén en la allowlist del grupo.
+@function _sanitize($map, $group) {
+  $allowed: map.get(tokens.$allowlist, $group);
+  $clean: ();
+  @each $key, $value in $map {
+    @if list.index($allowed, $key) {
+      $clean: map.set($clean, $key, $value);
+    } @else {
+      @warn "_sanitize-theme: token desconocido '#{$key}' en grupo '#{$group}' — ignorado.";
+    }
   }
-  &[data-theme="light"] {
-    @include minimalist-light-mode.minimalist-light;
+  @return $clean;
+}
+
+// Fusiona el grupo del tema sobre el default (fallback), saneado.
+@function _group($theme, $group) {
+  $override: map.get($theme, $group);
+  @if $override == null {
+    $override: ();
+  }
+  @return map.merge(map.get(default.$theme, $group), _sanitize($override, $group));
+}
+
+/** Reset base (delega en abstracts/_reset). */
+@mixin reset {
+  @include reset.base;
+}
+
+/**
+ * Publica las custom properties de un tema, scopeadas por skin y modo:
+ * `:root[data-theme="<skin>"]` (medidas/tipografía/motion + claro por defecto), y los modos
+ * `light`/`dark`/`system` (este último sigue `prefers-color-scheme`).
+ */
+@mixin apply($theme) {
+  $measures: _group($theme, 'measures');
+  $typefaces: _group($theme, 'typefaces');
+  $animations: _group($theme, 'animations');
+  $light: _group($theme, 'light-mode');
+  $dark: _group($theme, 'dark-mode');
+  $skin: map.get($theme, 'theme-name');
+
+  :root[data-theme='#{$skin}'] {
+    @include _emit($measures);
+    @include _emit($typefaces);
+    @include _emit($animations);
+    @include _emit($light); // claro por defecto cuando no se fija el modo
+  }
+  :root[data-theme='#{$skin}'][data-theme-mode='light'] {
+    @include _emit($light);
+  }
+  :root[data-theme='#{$skin}'][data-theme-mode='dark'] {
+    @include _emit($dark);
+  }
+  :root[data-theme='#{$skin}'][data-theme-mode='system'] {
+    @media (prefers-color-scheme: dark) {
+      @include _emit($dark);
+    }
+  }
+}
+
+/** Aplica bajo demanda los mixins de los componentes realmente usados (CSS mínimo). */
+@mixin subscribe($components...) {
+  @each $component in $components {
+    @include meta.apply($component);
   }
 }

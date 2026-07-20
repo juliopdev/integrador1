@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  valkey:
+    image: valkey/valkey:8.0-alpine
+    container_name: baas_valkey
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+
+  caddy:
+    image: caddy:2.7-alpine
+    container_name: baas_caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy/security.caddy:/etc/caddy/security.caddy
+      - ./caddy/errors:/etc/caddy/errors
+      - ./certs:/etc/caddy/certs
+      - caddy_data:/data
+      - caddy_config:/config
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - valkey
+
+volumes:
+  valkey_data:
+  caddy_data:
+  caddy_config:

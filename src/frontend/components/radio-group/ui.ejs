@@ -1,0 +1,34 @@
+<%
+  const name = locals.name || '';
+  const legend = locals.legend || '';
+  const items = locals.items || [];
+  const disabled = locals.disabled || false;
+  const error = locals.error || null;
+  const idPrefix = locals.id || ('radio-' + name);
+%>
+<fieldset class="c-input c-radio-group" data-invalid="<%= error ? 'true' : 'false' %>" <% if (disabled) { %>disabled<% } %>>
+  <% if (legend) { %>
+    <legend class="c-input__label c-radio-group__legend"><%= legend %></legend>
+  <% } %>
+  <div class="c-radio-group__list">
+    <% items.forEach((item, idx) => { %>
+      <% const itemId = `${idPrefix}-${idx}`; %>
+      <label class="c-radio <%= disabled ? 'c-radio--disabled' : '' %>" for="<%= itemId %>">
+        <input
+          class="c-radio__input"
+          type="radio"
+          id="<%= itemId %>"
+          name="<%= name %>"
+          value="<%= item.value %>"
+          <% if (item.checked) { %>checked<% } %>
+          <% if (disabled) { %>disabled<% } %>
+        />
+        <span class="c-radio__control" aria-hidden="true"></span>
+        <% if (item.label) { %>
+          <span class="c-radio__label"><%= item.label %></span>
+        <% } %>
+      </label>
+    <% }) %>
+  </div>
+  <span class="c-input__error"><%= error || '' %></span>
+</fieldset>

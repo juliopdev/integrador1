@@ -1,0 +1,1 @@
+ALTER TABLE `tenant_providers` ADD `settings_json` text;

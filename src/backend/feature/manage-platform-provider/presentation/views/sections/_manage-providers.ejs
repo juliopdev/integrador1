@@ -1,0 +1,44 @@
+<%
+  // Paso 2 (`_step-manage-provider` según .doc/tree/.../manage-platform-backend.md): linkear
+  // proveedores por categoría. El submit va contra `POST /api-system/v1/tenants/:tenantId/providers`
+  // (api.handler) que valida la conexión y cifra la config en `tenant_providers`.
+  //
+  // Catálogo de providers (Iteration 25):
+  //  - database: neon (SQL) · mongodb-atlas (NoSQL) operable (adapter existe)
+  //  - auth:     google · facebook/linkedin/github/apple/microsoft próximamente
+  //
+  // El `Form` (frontend) expande claves con notación de punto (`config.uri`, `config.clientId`) a
+  // `{ config: { uri | clientId } }` — permite formularios uniformes por provider.
+  const t = locals.activeTenant || {};
+  const linked = (locals.wizardState && locals.wizardState.linkedProviders) || [];
+  // Capa 3: mapa `{ 'database::neon': { published: [...], draft: [...], publishedVersion } }`
+  // calculado por `getWizardState` para mostrar impacto ANTES del clic en Deslinkear.
+  const providerUsage = (locals.wizardState && locals.wizardState.providerUsage) || {};
+
+  // P8.5: CATALOG derivado del registry inyectado como local. Antes vivía inline (40 líneas
+  // duplicando lo que ya declara `infrastructure/providers/registry.js`). Cada nuevo provider
+  // sólo requiere agregar una entrada al registry — esta vista no se toca.
+  const CATALOG = locals.providerCatalog || { database: [], auth: [], storage: [], mail: [], payments: [] };
+
+  const sharedArgs = { linked, providerUsage, providerCatalog: CATALOG, activeTenant: t };
+%>
+
+<div class="u-flex u-flex-col u-gap-md">
+  <%- include('./_linked-providers-table', { linked }) %>
+
+  <%- include('./_provider-accordion', { category: 'database', label: 'Base de datos', subtitle: 'El motor No-Code compila las tablas físicas contra el store que elijas por resource.', isOpen: true, ...sharedArgs }) %>
+
+  <%- include('./_provider-accordion', { category: 'auth', label: 'Autenticación de Users', subtitle: 'Login social para clientes finales. Las credenciales se guardan cifradas (AES-256-GCM) por tenant.', ...sharedArgs }) %>
+
+  <%- include('./_provider-accordion', { category: 'storage', label: 'Almacenamiento de assets', subtitle: 'Para campos asset del contrato. Cloudinary sube los archivos y guarda la URL pública en el registro.', ...sharedArgs }) %>
+
+  <%- include('./_provider-accordion', { category: 'mail', label: 'Correo empresarial', subtitle: 'Linkea un proveedor SMTP/API para enviar correos transaccionales a tus usuarios finales (activación de cuenta, restablecer contraseña, notificaciones de soporte). Sin provider linkeado, el envío se omite silenciosamente.', ...sharedArgs }) %>
+
+  <%- include('./_provider-accordion', { category: 'payments', label: 'Pagos en línea', subtitle: 'Linkea una pasarela de pagos para que tu backend pueda procesar transacciones (Stripe Checkout, Mercado Pago, etc.).', ...sharedArgs }) %>
+
+  <%- include('./_derived-auth-status', {
+    derivedAuth: (locals.wizardState && locals.wizardState.derivedAuth) || { enabled: false, strategies: [] },
+    activeTenant: t,
+    linked,
+  }) %>
+</div>

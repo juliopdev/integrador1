@@ -1,0 +1,32 @@
+<%
+  const name = locals.name || '';
+  const label = locals.label || '';
+  const value = locals.value || '';
+  const placeholder = locals.placeholder || '';
+  const error = locals.error || null;
+  const required = locals.required || false;
+  const disabled = locals.disabled || false;
+  const maxlength = locals.maxlength || null;
+  const showCounter = locals.showCounter || false;
+  const id = locals.id || ('field-' + name);
+  const rows = locals.rows || 4;
+%>
+<div class="c-input c-textarea" data-invalid="<%= error ? 'true' : 'false' %>">
+  <% if (label) { %><label class="c-input__label" for="<%= id %>"><%= label %></label><% } %>
+  <div class="c-input__wrapper">
+    <textarea
+      class="c-input__field c-input__field--textarea"
+      id="<%= id %>"
+      name="<%= name %>"
+      placeholder="<%= placeholder %>"
+      rows="<%= rows %>"
+      <% if (maxlength) { %>maxlength="<%= maxlength %>"<% } %>
+      <% if (required) { %>required<% } %>
+      <% if (disabled) { %>disabled<% } %>
+    ><%= value %></textarea>
+    <% if (showCounter && maxlength) { %>
+      <span class="c-input__counter" data-count="0" data-max="<%= maxlength %>">0 / <%= maxlength %></span>
+    <% } %>
+  </div>
+  <span class="c-input__error"><%= error || '' %></span>
+</div>

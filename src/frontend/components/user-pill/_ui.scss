@@ -1,0 +1,91 @@
+// user-pill: trigger de sesión que reemplaza al topbar (Iter 52). Vive en el footer del sidebar
+// pero no depende de él — puede ir en cualquier lado. Cuando el sidebar está `--collapsed`, sólo
+// se muestra el avatar (el `.c-user-pill__meta` y el chevron se ocultan).
+@use 'sass:meta';
+
+@mixin styles {
+  .c-user-pill {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    padding: var(--space-2) var(--space-2);
+    background: var(--color-surface-2, var(--color-surface));
+    border: var(--border-thin) solid var(--color-border);
+    border-radius: var(--radius-md);
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--color-text);
+    transition: background var(--duration-fast) var(--easing-standard);
+
+    &:hover {
+      background: var(--color-surface-hover, var(--color-surface));
+    }
+
+    &[aria-expanded='true'] {
+      background: var(--color-surface-hover, var(--color-surface));
+    }
+
+    &__avatar {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--color-accent-soft, var(--color-accent));
+      color: var(--color-accent-on-soft, var(--color-accent-contrast));
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: 0.03em;
+    }
+
+    &__meta {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+    }
+
+    &__email {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &__role {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &__chevron {
+      flex-shrink: 0;
+      color: var(--color-text-muted);
+      display: inline-flex;
+    }
+  }
+
+  // Cuando el sidebar está colapsado (rail 64px), sólo mostramos el avatar centrado.
+  .c-sidebar--collapsed .c-user-pill {
+    justify-content: center;
+    padding: var(--space-2);
+
+    &__meta,
+    &__chevron {
+      display: none;
+    }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

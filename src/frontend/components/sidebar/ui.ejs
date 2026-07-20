@@ -1,0 +1,94 @@
+<%
+  // sidebar: barra lateral colapsable del dashboard. Agnóstico de dominio — el layout arma la
+  // estructura de menú/atajos según el rol del usuario y se la pasa por `locals`. Ver views.md §2.
+  //
+  //   brandTitle  string          — texto del logo (default 'Mi Baas')
+  //   activePath  string          — pathname actual; marca `--active` en el link que coincida
+  //   menu        Array<Link>     — items del menú principal (grupo 1)
+  //   shortcuts   Array<Link>?    — atajos externos (opcional; se dibujan en el footer)
+  //   userMenu    { email, roleLabel?, avatarText?, targetMenu } — Iter 52: reemplaza al topbar.
+  //                                 Renderiza `c-user-pill` en el footer; el trigger abre el
+  //                                 `dropdown-menu` con id=targetMenu que la página includes aparte.
+  //   settings    { label, icon, dataTarget, title? }? — DEPRECATED (Iter 52): se movió al userMenu.
+  //                                 Se mantiene por compat con vistas legadas que no pasen userMenu.
+  //
+  //   Link = { href, icon, label, title?, external? }
+  //          `external` abre en pestaña nueva con rel="noopener noreferrer".
+  const brandTitle = locals.brandTitle || 'Mi Baas';
+  const activePath = locals.activePath || '';
+  const menu = locals.menu || [];
+  const shortcuts = locals.shortcuts || [];
+  const userMenu = locals.userMenu || null;
+  const settings = locals.settings || null;
+  const hasFooter = shortcuts.length > 0 || settings || userMenu;
+  const isActive = (href) => (activePath === href ? 'c-sidebar__link--active' : '');
+%>
+<aside class="c-sidebar" data-component="sidebar">
+  <div class="c-sidebar__brand">
+    <span class="c-sidebar__logo-icon" title="<%= brandTitle %>"><%- include('frontend/components/icon/ui', { name: 'bolt', size: 'lg' }) %></span>
+    <span class="c-sidebar__logo-text"><%= brandTitle %></span>
+    <button type="button" class="c-sidebar__toggle" data-action="sidebar:toggle" aria-label="Colapsar/expandir menú" aria-expanded="true"><%- include('frontend/components/icon/ui', { name: 'menu', size: 'lg' }) %></button>
+  </div>
+
+  <% if (menu.length > 0) { %>
+    <nav class="c-sidebar__nav">
+      <ul class="c-sidebar__menu">
+        <% menu.forEach((link) => { %>
+          <li>
+            <a
+              href="<%= link.href %>"
+              class="c-sidebar__link <%= isActive(link.href) %>"
+              data-tooltip="<%= link.title || link.label %>"
+              <% if (link.external) { %>target="_blank" rel="noopener noreferrer"<% } %>
+            >
+              <span class="c-sidebar__link-icon" aria-hidden="true"><%- include('frontend/components/icon/ui', { name: link.icon, size: 'lg' }) %></span>
+              <span class="c-sidebar__link-label"><%= link.label %></span>
+            </a>
+          </li>
+        <% }); %>
+      </ul>
+    </nav>
+  <% } %>
+
+  <% if (hasFooter) { %>
+    <div class="c-sidebar__footer">
+      <% if (shortcuts.length > 0) { %>
+        <div class="c-sidebar__shortcuts" aria-label="Atajos externos">
+          <% shortcuts.forEach((link) => { %>
+            <a
+              href="<%= link.href %>"
+              class="c-sidebar__link"
+              data-tooltip="<%= link.title || link.label %>"
+              <% if (link.external !== false) { %>target="_blank" rel="noopener noreferrer"<% } %>
+            >
+              <span class="c-sidebar__link-icon" aria-hidden="true"><%- include('frontend/components/icon/ui', { name: link.icon, size: 'lg' }) %></span>
+              <span class="c-sidebar__link-label"><%= link.label %></span>
+            </a>
+          <% }); %>
+        </div>
+      <% } %>
+
+      <% if (userMenu) { %>
+        <div class="c-sidebar__user">
+          <%- include('frontend/components/user-pill/ui', {
+            email: userMenu.email,
+            avatarText: userMenu.avatarText,
+            targetMenu: userMenu.targetMenu || 'user-menu',
+            roleLabel: userMenu.roleLabel,
+          }) %>
+        </div>
+      <% } else if (settings) { %>
+        <button
+          type="button"
+          class="c-sidebar__link"
+          data-action="modal:open"
+          data-target="<%= settings.dataTarget %>"
+          data-tooltip="<%= settings.title || settings.label %>"
+        >
+          <span class="c-sidebar__link-icon" aria-hidden="true"><%- include('frontend/components/icon/ui', { name: settings.icon || 'cog', size: 'lg' }) %></span>
+          <span class="c-sidebar__link-label"><%= settings.label %></span>
+        </button>
+      <% } %>
+    </div>
+  <% } %>
+</aside>

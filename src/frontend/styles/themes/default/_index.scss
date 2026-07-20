@@ -1,0 +1,17 @@
+// Tema default: compone los grupos en un único mapa `$theme`. Es la **fuente de verdad de los valores**
+// y el **fallback** de todo otro tema. De sus keys se deriva la allowlist (abstracts/_tokens.scss).
+
+@use 'light-mode' as light;
+@use 'dark-mode' as dark;
+@use 'measures' as measures;
+@use 'typefaces' as typefaces;
+@use 'animations' as animations;
+
+$theme: (
+  'theme-name': ('default'),
+  'light-mode': light.$light-mode,
+  'dark-mode': dark.$dark-mode,
+  'measures': measures.$measures,
+  'typefaces': typefaces.$typefaces,
+  'animations': animations.$animations,
+);

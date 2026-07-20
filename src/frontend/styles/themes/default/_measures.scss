@@ -1,0 +1,50 @@
+// Tema default — medidas (independientes del modo): espaciado 4pt, radios, bordes, tamaños, z-index, anchos.
+
+$measures: (
+  // Espaciado (escala 4pt)
+  'space-1': 4px,
+  'space-2': 8px,
+  'space-3': 12px,
+  'space-4': 16px,
+  'space-5': 20px,
+  'space-6': 24px,
+  'space-8': 32px,
+  'space-12': 48px,
+  'space-16': 64px,
+
+  // Radios
+  'radius-sm': 4px,
+  'radius-md': 8px,
+  'radius-lg': 16px,
+  'radius-full': 9999px,
+
+  // Bordes
+  'border-thin': 1px,
+  'border-thick': 2px,
+
+  // Tamaños de componente / icono
+  'size-control': 40px,
+  'size-icon': 20px,
+
+  // Sombras
+  'shadow-sm': 0 1px 2px rgba(15, 23, 42, 0.08),
+  'shadow-md': 0 4px 12px rgba(15, 23, 42, 0.12),
+  'shadow-lg': 0 12px 32px rgba(15, 23, 42, 0.18),
+
+  // Z-index semántico. Orden de abajo hacia arriba:
+  //   sticky (sidebar) < dropdown (superpone al sidebar cuando el trigger está en él) < modal
+  //   < toast (queda visible incluso sobre modales) < tooltip (más alto para hover-over-anything).
+  'z-sticky': 1000,
+  'z-dropdown': 1200,
+  'z-modal': 1300,
+  'z-toast': 1400,
+  'z-tooltip': 1500,
+
+  // Anchos de layout
+  'width-sidebar': 256px,
+  'width-modal': 480px,
+  'width-modal-lg': 640px, // modales con nav lateral (settings)
+
+  // Filtro de fondo
+  'backdrop-filter': none,
+);

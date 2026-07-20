@@ -1,0 +1,29 @@
+<%
+  const logs = locals.logs || [];
+  // El card recibe `body` como string de confianza. Para NO escribir clases de componente a mano,
+  // capturamos el render de los hijos (badge/empty-state) con include() —que devuelve string— y lo
+  // interpolamos. Cada componente auto-escapa sus datos; la sección solo escapa SU propio texto.
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  let bodyContent;
+  if (logs.length === 0) {
+    bodyContent = include('frontend/components/empty-state/ui', {
+      title: 'Sin actividad reciente',
+      message: 'No se encontraron eventos o logs en el sistema.',
+    });
+  } else {
+    const items = logs.map((log) => {
+      const variant = log.level === 'error' ? 'error' : log.level === 'warn' ? 'warning' : 'info';
+      const dateStr = new Date(log.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const badge = include('frontend/components/badge/ui', { variant, label: log.level.toUpperCase() });
+      // c-activity-* son clases PROPIAS de esta sección (aún no existe el componente activity-feed).
+      return `
+        <li class="c-activity-item">
+          <div class="c-activity-meta">${badge}<span class="c-activity-time">${esc(dateStr)}</span></div>
+          <div class="c-activity-message">${esc(log.message)}</div>
+        </li>`;
+    }).join('');
+    bodyContent = `<ul class="c-activity-feed">${items}</ul>`;
+  }
+%>
+<%- include('frontend/components/card/ui', { title: 'Actividad Reciente', body: bodyContent, padding: 'md' }) %>

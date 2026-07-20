@@ -1,0 +1,19 @@
+// Tema default — movimiento (independiente del modo): duraciones, curvas y referencias de animación.
+// Las referencias (`motion-*`) apuntan a @keyframes; default usa los compartidos de shared/_animations.scss.
+// Un tema con personalidad propia define sus @keyframes y re-mapea estas referencias (scss.md).
+
+$animations: (
+  'duration-fast': 120ms,
+  'duration-normal': 240ms,
+  'duration-slow': 400ms,
+
+  'easing-standard': cubic-bezier(0.2, 0, 0, 1),
+  'easing-emphasized': cubic-bezier(0.2, 0, 0, 1.2),
+  'easing-decelerate': cubic-bezier(0, 0, 0, 1),
+  'easing-accelerate': cubic-bezier(0.3, 0, 1, 1),
+  'easing-linear': linear,
+
+  'motion-enter': fade-in,
+  'motion-exit': fade-out,
+  'motion-attention': pulse,
+);

@@ -1,0 +1,50 @@
+<%
+  const list = locals.resources || [];
+  const version = locals.contractVersion;
+%>
+<% if (!version) { %>
+  <%- include('frontend/components/card/ui', {
+    title: 'Sin contrato publicado',
+    body: `
+      <p class="u-text-muted u-text-sm u-m-0">
+        Tu plataforma aún está en proceso de configuración. Una vez que el administrador publique el catálogo, verás aquí las secciones disponibles para gestionar tus datos de forma sencilla.
+      </p>
+    `,
+    padding: 'lg',
+  }) %>
+<% } else { %>
+  <div class="l-home__grid">
+    <% list.forEach((r) => { %>
+      <%
+        const cap = r.name.charAt(0).toUpperCase() + r.name.slice(1);
+        const cardBody = `
+          <div class="u-flex u-flex-col u-gap-xs">
+            <p class="u-text-muted u-text-sm">Lista de contenidos para <strong>${cap}</strong>. Permite ver, agregar y editar los registros del sitio web.</p>
+            <div class="u-flex u-gap-xs" style="margin-top: var(--space-2);">
+              <span class="c-badge c-badge--neutral u-text-xs">${r.fieldsCount} campos definidos</span>
+              <span class="c-badge c-badge--success u-text-xs">${r.store === 'sql' ? 'PostgreSQL' : 'MongoDB'}</span>
+            </div>
+          </div>
+        `;
+        const cardFooter = `
+          <div class="u-flex u-gap-sm u-w-full" style="width: 100%; display: flex; gap: var(--space-2);">
+            <a href="/dashboard/data/${r.name}" class="c-button c-button--primary c-button--sm" style="flex: 1; text-align: center; justify-content: center; text-decoration: none;">
+              <span class="c-button__label">Gestionar Datos</span>
+            </a>
+            <a href="/dashboard/data/${r.name}?import=true" class="c-button c-button--secondary c-button--sm" style="text-decoration: none;">
+              ${include('frontend/components/icon/ui', { name: 'send', size: 'sm' })}
+              <span class="c-button__label">Importar CSV</span>
+            </a>
+          </div>
+        `;
+      %>
+      <%- include('frontend/components/card/ui', {
+        title: cap,
+        icon: 'database',
+        body: cardBody,
+        footer: cardFooter,
+        padding: 'md'
+      }) %>
+    <% }) %>
+  </div>
+<% } %>

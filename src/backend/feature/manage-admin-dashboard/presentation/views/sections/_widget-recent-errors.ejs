@@ -1,0 +1,37 @@
+<%
+  const rows = locals.recentErrors || [];
+  const escHtml = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const fmtAgo = (ms) => {
+    if (!ms) return '';
+    const diff = Math.round((Date.now() - ms) / 1000);
+    if (diff < 60) return `${diff}s`;
+    if (diff < 3600) return `${Math.round(diff / 60)} min`;
+    if (diff < 86400) return `${Math.round(diff / 3600)} h`;
+    return `${Math.round(diff / 86400)} d`;
+  };
+
+  let bodyContent = '';
+  if (rows.length === 0) {
+    bodyContent = `<p class="l-home-widget__empty">Sin errores recientes — todo tranquilo.</p>`;
+  } else {
+    const listItems = rows.map((r) => {
+      const levelClass = r.level === 'error' ? 'error' : r.level === 'warn' ? 'warning' : 'info';
+      return `
+        <li class="l-log-list__item" data-level="${r.level}">
+          <span class="c-badge c-badge--${levelClass}">${r.level.toUpperCase()}</span>
+          <div class="l-log-list__content">
+            <div class="l-log-list__message">${escHtml(r.message)}</div>
+            <div class="l-log-list__meta">hace ${fmtAgo(r.createdAt)}</div>
+          </div>
+        </li>
+      `;
+    }).join('');
+    bodyContent = `<ul class="l-log-list">${listItems}</ul>`;
+  }
+%>
+<%- include('frontend/components/card/ui', {
+  title: 'Últimos errores',
+  headerActions: `<a class="l-home-widget__link" href="/dashboard/logs?level=error">${include('frontend/components/icon/ui', { name: 'terminal', size: 'sm' })} Ver logs →</a>`,
+  body: bodyContent,
+  padding: 'md'
+}) %>

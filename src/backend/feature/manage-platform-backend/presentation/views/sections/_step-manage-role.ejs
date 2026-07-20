@@ -1,0 +1,74 @@
+<%
+  // Paso 4 (`_step-manage-role` según .doc/tree/.../manage-platform-backend.md): el Superadmin
+  // crea los roles de categoría `staff` del tenant; el Master luego solo los asigna. El submit
+  // apunta a `POST /api-system/v1/tenants/:tenantId/roles` (existente en api.handler).
+  //
+  // MVP: solo se pide el nombre. La matriz de permisos (`endpoint → verbos`) usa el default
+  // `permissions: {}` del `createRoleSchema` — el Superadmin puede refinarla más adelante desde el
+  // endpoint API (o desde el editor de permisos cuando se implemente).
+  //
+  // Nombres reservados (`master`, `support`, `superadmin`, `user`, `admin`, `owner`) los rechaza el
+  // use case con `DomainError RESERVED_ROLE` → el `Form` muestra el `message` como toast de error.
+  const t = locals.activeTenant || {};
+  const roles = (locals.wizardState && locals.wizardState.roles) || [];
+
+  const rolesTable = roles.length ? include('frontend/components/data-table/ui', {
+    columns: [
+      { key: 'name', label: 'Nombre del rol' },
+      { key: 'id', label: 'Identificador' },
+      { key: 'actions', label: '', align: 'right' },
+    ],
+    rows: roles.map((r) => ({
+      name: include('frontend/components/badge/ui', { variant: 'neutral', label: r.name }),
+      id: r.id,
+      // P7.2: CRUD — eliminar rol staff (los del sistema no llegan aquí: listStaff los filtra).
+      actions: include('frontend/components/form/ui', {
+        class: 'l-nocode-cell-form',
+        method: 'post',
+        action: `/api-system/v1/tenants/${t.id}/roles/${r.name}`,
+        dataMethod: 'delete',
+        dataConfirm: `¿Eliminar el rol ${r.name}? Los colaboradores que lo tengan lo perderán.`,
+        redirect: `/dashboard/backends/${t.id}?step=role`,
+        body: include('frontend/components/button/ui', { type: 'submit', variant: 'ghost', size: 'sm', label: '', icon: 'trash', ariaLabel: `Eliminar rol ${r.name}` })
+      }),
+    })),
+    emptyState: null,
+  }) : '';
+
+  const formHtml = include('frontend/components/form/ui', {
+    method: 'post',
+    action: `/api-system/v1/tenants/${t.id}/roles`,
+    redirect: `/dashboard/backends/${t.id}?step=role`,
+    body: `
+      ${include('frontend/components/input/ui', {
+        name: 'name',
+        label: 'Nombre del rol (snake_case)',
+        placeholder: 'inventory',
+        required: true,
+      })}
+      ${include('frontend/components/button/ui', {
+        type: 'submit',
+        variant: 'primary',
+        label: 'Crear rol',
+        class: 'u-w-full',
+      })}
+    `
+  });
+%>
+
+<div class="u-flex u-flex-col u-gap-md">
+  <% if (roles.length) { %>
+    <%- include('frontend/components/card/ui', {
+      title: 'Roles creados',
+      body: rolesTable,
+      padding: 'md',
+    }) %>
+  <% } %>
+
+  <%- include('frontend/components/card/ui', {
+    title: 'Crear un rol de Staff',
+    subtitleHtml: 'El Master los asignará luego a colaboradores. Nombres reservados (<code>master</code>, <code>support</code>, <code>superadmin</code>, <code>user</code>, <code>admin</code>, <code>owner</code>) están bloqueados.',
+    body: formHtml,
+    padding: 'lg',
+  }) %>
+</div>

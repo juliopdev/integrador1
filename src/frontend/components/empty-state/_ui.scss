@@ -1,0 +1,32 @@
+@use 'sass:meta';
+
+@mixin styles {
+  .c-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-3);
+    padding: var(--space-12) var(--space-6);
+    color: var(--color-text-muted);
+
+    &__icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 3rem;
+      height: 3rem;
+      border-radius: var(--radius-full);
+      background: var(--color-surface-raised);
+      color: var(--color-text-muted);
+      font-size: var(--font-size-xl);
+    }
+    &__title { font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); color: var(--color-text); }
+    &__message { font-size: var(--font-size-sm); max-width: 42ch; }
+    &__cta { margin-top: var(--space-2); }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

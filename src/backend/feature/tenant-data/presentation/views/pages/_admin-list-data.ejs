@@ -1,0 +1,22 @@
+<%
+  // Página delgada (views.md): lista los resources del contrato publicado. Master/Staff usan
+  // esta pantalla como índice de las "tablas" del tenant — desde acá se navegará al detalle CRUD
+  // en los siguientes slices de tenant-data.
+  const version = locals.contractVersion || null;
+  const list = locals.resources || [];
+%>
+<div class="u-flex u-flex-col u-gap-md">
+  <%- include('frontend/components/breadcrumbs/ui', {
+    currentPath: locals.currentPath,
+    items: [
+      { label: 'Dashboard', href: '/dashboard' },
+      { label: 'Datos' },
+    ],
+  }) %>
+  <%- include('frontend/components/page-header/ui', {
+    titleHtml: 'Gestor de Contenidos (CMS)',
+    subtitle: 'Administra y actualiza la información que se muestra en las distintas secciones de tu sitio web.',
+  }) %>
+
+  <%- include('backend/feature/tenant-data/presentation/views/sections/_list-resources', { resources: list, contractVersion: version }) %>
+</div>

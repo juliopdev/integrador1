@@ -1,0 +1,38 @@
+<%
+  const counts = locals.counts || {
+    endUsers: 0, staff: 0, notificationsPublished: 0,
+    usersJoinedToday: 0, usersRemovedToday: 0,
+  };
+  const joined = counts.usersJoinedToday || 0;
+
+  const headerActionsHtml = `
+    <a class="l-home-widget__link" href="/dashboard/staff">
+      ${include('frontend/components/icon/ui', { name: 'users', size: 'sm' })} Gestionar equipo
+    </a>
+  `;
+
+  const bodyHtml = `
+    <div class="l-home-widget__stats-3">
+      ${include('frontend/components/stat/ui', {
+        label: 'Total usuarios',
+        value: counts.endUsers,
+        delta: joined > 0 ? `+${joined} hoy` : null,
+        deltaVariant: 'success'
+      })}
+      ${include('frontend/components/stat/ui', {
+        label: 'Mi equipo',
+        value: counts.staff
+      })}
+      ${include('frontend/components/stat/ui', {
+        label: 'Notif. enviadas',
+        value: counts.notificationsPublished
+      })}
+    </div>
+  `;
+%>
+<%- include('frontend/components/card/ui', {
+  title: 'Mi comunidad',
+  headerActions: headerActionsHtml,
+  body: bodyHtml,
+  padding: 'md'
+}) %>

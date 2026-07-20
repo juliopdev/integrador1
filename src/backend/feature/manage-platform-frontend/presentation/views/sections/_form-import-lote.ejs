@@ -1,0 +1,22 @@
+<%- include('frontend/components/modal/ui', {
+  id: 'modal-import-env-lote',
+  title: 'Importar Variables en Lote',
+  body: `
+    <div class="c-form" style="display: flex; flex-direction: column; gap: var(--space-3);">
+      <p class="u-text-xs u-text-muted u-m-0">
+        Pegá tus variables de entorno en formato <code>CLAVE=valor</code> (una por línea). Las líneas vacías o comentarios que inicien con <code>#</code> se ignorarán.
+      </p>
+      <div class="c-input c-textarea">
+        <div class="c-input__wrapper">
+          <textarea class="c-input__field c-input__field--textarea" id="textarea-import-env-lote" rows="8" placeholder="API_URL=https://api.ejemplo.com&#10;APP_NAME=Mi Tienda&#10;DEBUG=false" style="font-family: monospace; font-size: var(--font-size-xs);"></textarea>
+        </div>
+      </div>
+    </div>
+  `,
+  footer: `
+    <div class="u-flex u-justify-end u-gap-xs" style="width: 100%;">
+      <button type="button" class="c-button c-button--ghost" data-action="modal:close" data-target="modal-import-env-lote">Cancelar</button>
+      <button type="button" class="c-button c-button--primary" id="btn-save-import-env">Importar</button>
+    </div>
+  `
+}) %>

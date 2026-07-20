@@ -1,0 +1,48 @@
+@use 'sass:meta';
+@use '../../styles/shared/breakpoints';
+
+@mixin styles {
+  .c-dynamic-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    width: 100%;
+
+    &__fields {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: var(--space-4);
+    }
+
+    &__field-wrapper {
+      grid-column: span 12;
+
+      @include breakpoints.up(mobile) {
+        @for $i from 1 through 12 {
+          &--span-#{$i} {
+            grid-column: span #{$i};
+          }
+        }
+      }
+    }
+
+    &__error {
+      margin-top: var(--space-2);
+      padding: var(--space-3);
+      border-radius: var(--radius-md);
+      font-family: var(--font-sans);
+      font-size: var(--font-size-sm);
+    }
+
+    &__actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-3);
+      margin-top: var(--space-2);
+    }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

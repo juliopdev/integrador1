@@ -1,0 +1,36 @@
+<%
+  // Interfaz de inclusión: data-table genérica.
+  // Recibe `columns` (array de { key, label, align? }) y `rows` (array de objetos key→HTML string).
+  // Opcionalmente recibe `emptyState` ({ title, message }) para el estado vacío.
+  const columns = locals.columns || [];
+  const rows = locals.rows || [];
+  const emptyState = locals.emptyState || null;
+%>
+<% if (rows.length === 0 && emptyState) { %>
+  <%- include('../empty-state/ui', emptyState) %>
+<% } else { %>
+  <div class="c-data-table">
+    <table class="c-data-table__table">
+      <thead class="c-data-table__head">
+        <tr class="c-data-table__row c-data-table__row--header">
+          <% columns.forEach(col => { %>
+            <th class="c-data-table__cell c-data-table__cell--head<%= col.align === 'right' ? ' c-data-table__cell--right' : '' %>">
+              <%= col.label %>
+            </th>
+          <% }) %>
+        </tr>
+      </thead>
+      <tbody class="c-data-table__body">
+        <% rows.forEach(row => { %>
+          <tr class="c-data-table__row">
+            <% columns.forEach(col => { %>
+              <td class="c-data-table__cell<%= col.align === 'right' ? ' c-data-table__cell--right' : '' %>">
+                <%- row[col.key] %>
+              </td>
+            <% }) %>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+<% } %>

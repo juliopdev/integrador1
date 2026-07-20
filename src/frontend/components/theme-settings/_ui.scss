@@ -1,0 +1,43 @@
+@use 'sass:meta';
+
+// theme-settings: formulario de skin+modo del modal de configuración. Autónomo, solo tokens
+// (scss.md §3–4). Se emite bajo demanda vía theme.subscribe(c.theme-settings-ui()).
+@mixin styles {
+  .c-theme-settings {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+
+    &__field {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    &__label {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text);
+    }
+
+    &__select {
+      width: 100%;
+      padding: var(--space-2);
+      border: var(--border-thin) solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-sans);
+      font-size: var(--font-size-sm);
+      background-color: var(--color-surface);
+      color: var(--color-text);
+
+      &:focus-visible {
+        outline: var(--border-thick) solid var(--color-focus-ring);
+        outline-offset: var(--border-thin);
+      }
+    }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

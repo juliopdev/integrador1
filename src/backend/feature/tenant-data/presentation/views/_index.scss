@@ -1,0 +1,119 @@
+// Estilos propietarios del feature tenant-data (scss.md §7): layout de páginas + el formulario
+// dinámico. NO reusa clases de componentes UI; solo tokens. `@use`ado desde dashboard.scss.
+
+// Columna acotada de las páginas de alta/edición de records.
+.l-data-form {
+  max-width: 40rem;
+}
+
+// Formulario dinámico: campos generados a partir del schema del resource. Sustituye el mal uso
+// de `.c-input` (que reventaba el montaje del componente Input) por clases propias del feature.
+.l-dynamic-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+
+  // Variante en línea para el checkbox (label + control en fila).
+  &--inline {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  &__label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+  }
+
+  &__textarea {
+    width: 100%;
+    padding: var(--space-2);
+    border: var(--border-thin) solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-sans);
+    font-size: var(--font-size-sm);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+
+    &--mono { font-family: var(--font-mono); }
+
+    &:focus-visible {
+      outline: var(--border-thick) solid var(--color-focus-ring);
+      outline-offset: var(--border-thin);
+    }
+  }
+}
+
+// ── Image Thumbnails in Data Tables ─────────────────────────────────
+.c-table-thumbnail {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: var(--border-thin) solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  display: block;
+}
+
+// ── CSV Import Dropzone ─────────────────────────────────────────────
+.c-csv-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  border: var(--border-thick) dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color var(--duration-fast) var(--easing-standard),
+              background var(--duration-fast) var(--easing-standard);
+  position: relative;
+  margin-top: var(--space-3);
+
+  &:hover {
+    border-color: var(--color-primary-500);
+    background: color-mix(in srgb, var(--color-primary-50) 25%, var(--color-surface-raised));
+  }
+
+  &__label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+
+  &__input {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    display: none;
+  }
+}
+
+// ── CSV Wizard & Mappings ───────────────────────────────────────────
+.c-csv-wizard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+
+  &__step {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+}
+
+.c-csv-summary-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-surface-raised);
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+

@@ -1,0 +1,59 @@
+<%
+  const activeProvider = locals.activeProvider || null;
+  const activeType = locals.activeType || null;
+
+  const providers = [
+    { key: null,         label: 'Todos' },
+    { key: 'cloudinary', label: 'Cloudinary' },
+    { key: 'box',        label: 'Box' },
+  ];
+  const types = [
+    { key: null,        label: 'Todos' },
+    { key: 'image',     label: 'Imágenes' },
+    { key: 'video',     label: 'Video' },
+    { key: 'audio',     label: 'Audio' },
+    { key: 'document',  label: 'Documentos' },
+  ];
+
+  // Helper para armar la URL respetando el resto del query (mantiene provider/type al cambiar otro).
+  const buildHref = (overrides) => {
+    const params = new URLSearchParams();
+    const finalProvider = 'provider' in overrides ? overrides.provider : activeProvider;
+    const finalType = 'type' in overrides ? overrides.type : activeType;
+    if (finalProvider) params.set('provider', finalProvider);
+    if (finalType) params.set('type', finalType);
+    const qs = params.toString();
+    return qs ? `/dashboard/gallery?${qs}` : '/dashboard/gallery';
+  };
+%>
+
+<section class="c-card c-card--p-md l-gallery__filters">
+  <div class="u-flex u-flex-col u-gap-sm">
+    <div class="u-flex u-items-center u-gap-sm">
+      <strong class="u-text-sm">Storage:</strong>
+      <div class="u-flex u-gap-xs u-flex-wrap">
+        <% providers.forEach(function(p) { %>
+          <%- include('frontend/components/button/ui', {
+            label: p.label,
+            variant: activeProvider === p.key ? 'primary' : 'ghost',
+            size: 'sm',
+            href: buildHref({ provider: p.key }),
+          }) %>
+        <% }); %>
+      </div>
+    </div>
+    <div class="u-flex u-items-center u-gap-sm">
+      <strong class="u-text-sm">Tipo:</strong>
+      <div class="u-flex u-gap-xs u-flex-wrap">
+        <% types.forEach(function(t) { %>
+          <%- include('frontend/components/button/ui', {
+            label: t.label,
+            variant: activeType === t.key ? 'primary' : 'ghost',
+            size: 'sm',
+            href: buildHref({ type: t.key }),
+          }) %>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+</section>

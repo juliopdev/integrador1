@@ -1,0 +1,47 @@
+<%
+  // Página delgada: orquesta; el listado vive en la sección, el markup de tarjetas en los componentes.
+  const staff = locals.staff || [];
+%>
+<div class="l-staff">
+  <%- include('frontend/components/breadcrumbs/ui', {
+    currentPath: locals.currentPath,
+    items: [
+      { label: 'Inicio', href: '/dashboard' },
+      { label: 'Mi equipo' },
+    ],
+  }) %>
+  <header class="l-staff__header">
+    <h1 class="l-staff__title">Mi equipo</h1>
+    <%- include('frontend/components/button/ui', { variant: 'primary', label: 'Invitar colaborador', action: 'staff:invite' }) %>
+  </header>
+
+  <%- include('backend/feature/manage-master-staff/presentation/views/sections/_list-staff', { staff }) %>
+</div>
+
+<%- include('frontend/components/modal/ui', {
+  id: 'invite-staff-modal',
+  title: 'Invitar colaborador',
+  size: 'md',
+  body: `
+    <form class="c-form" method="post" action="/api-system/v1/staff" data-redirect="/dashboard/staff">
+      ${include('frontend/components/input/ui', {
+        name: 'email',
+        type: 'email',
+        label: 'Correo electrónico *',
+        required: true
+      })}
+      ${include('frontend/components/select/ui', {
+        name: 'roleId',
+        label: 'Rol *',
+        required: true,
+        options: (locals.rolesList || []).map((r) => ({ value: r.id, label: `${r.name} (${r.category})` }))
+      })}
+      ${include('frontend/components/button/ui', {
+        type: 'submit',
+        variant: 'primary',
+        label: 'Enviar invitación',
+        class: 'u-w-full'
+      })}
+    </form>
+  `
+}) %>

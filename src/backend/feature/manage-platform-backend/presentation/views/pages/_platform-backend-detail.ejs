@@ -1,0 +1,28 @@
+<%
+  // Página delgada (views.md): detalle read-only de un contrato publicado/retirado del tenant.
+  // Compone tres secciones: resumen (versión + estado + fecha), composición (resources + fields +
+  // endpoints), y auth+ws (estrategias + canales). No pinta nada más — la orquestación queda acá.
+  const t = locals.activeTenant || {};
+  const d = locals.detail || { version: '', status: '', schema: {} };
+%>
+<div class="u-flex u-flex-col u-gap-md">
+  <%- include('frontend/components/breadcrumbs/ui', {
+    currentPath: locals.currentPath,
+    items: [
+      { label: 'Inicio', href: '/dashboard' },
+      { label: 'Backends', href: '/dashboard/backends' },
+      { label: t.subdomain, href: `/dashboard/backends/${t.id}` },
+      { label: `Versión ${d.version}` },
+    ],
+  }) %>
+  <%- include('frontend/components/page-header/ui', {
+    titleHtml: `Backend <code>${d.version}</code> <span class="u-text-muted u-text-sm u-font-normal">· ${t.subdomain}</span>`,
+    subtitle: 'Vista de solo lectura del contrato compilado. Para editar y publicar una versión nueva vuelve al asistente.',
+  }) %>
+
+  <%# P8: resumen visual compartido (mismo que ve el paso Compilar antes del deploy). %>
+  <%- include('backend/feature/manage-platform-backend/presentation/views/sections/_backend-summary-visual', {
+    detail: d,
+    linkedProviders: locals.linkedProviders || null,
+  }) %>
+</div>

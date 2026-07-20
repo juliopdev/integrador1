@@ -1,0 +1,93 @@
+<%
+  const assets = locals.assets || [];
+  const meta = locals.pageMeta || { page: 1, totalPages: 1, hasNext: false, hasPrev: false };
+  const activeProvider = locals.activeProvider || null;
+  const activeType = locals.activeType || null;
+
+  // Helper: construye link de paginación preservando filtros.
+  const buildPageHref = (page) => {
+    const params = new URLSearchParams();
+    if (activeProvider) params.set('provider', activeProvider);
+    if (activeType) params.set('type', activeType);
+    params.set('page', String(page));
+    return `/dashboard/gallery?${params.toString()}`;
+  };
+
+  const fmtBytes = (b) => {
+    if (b == null) return '';
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+    return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+  };
+  const fmtDate = (ms) => new Date(ms).toLocaleString('es-ES', {
+    year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+
+  const isImage = (m) => typeof m === 'string' && m.startsWith('image/');
+%>
+
+<section class="l-gallery__grid u-grid u-gap-md">
+  <% assets.forEach(function(a) { %>
+    <article class="c-card c-card--p-md l-gallery__item">
+      <div class="l-gallery__preview">
+        <% if (isImage(a.mimeType)) { %>
+          <img src="<%= a.url %>" alt="<%= a.filename || a.publicId %>" loading="lazy" class="l-gallery__thumb" />
+        <% } else { %>
+          <div class="l-gallery__file-icon">
+            <span class="u-text-xs u-text-muted"><%= (a.format || a.mimeType || '?').toUpperCase() %></span>
+          </div>
+        <% } %>
+      </div>
+      <div class="c-card__body u-flex u-flex-col u-gap-xs">
+        <p class="u-text-sm u-text-strong u-truncate" title="<%= a.filename || a.publicId %>">
+          <%= a.filename || a.publicId %>
+        </p>
+        <p class="u-text-xs u-text-muted">
+          <%= fmtBytes(a.bytes) %> · <%= fmtDate(a.uploadedAt) %>
+        </p>
+        <% if (a.resourceName) { %>
+          <p class="u-text-xs u-text-muted">
+            Origen: <code><%= a.resourceName %>.<%= a.fieldName %></code>
+          </p>
+        <% } %>
+        <div class="u-flex u-gap-xs u-mt-xs">
+          <%- include('frontend/components/badge/ui', {
+            variant: 'neutral',
+            label: a.provider,
+          }) %>
+          <%- include('frontend/components/button/ui', {
+            label: 'Eliminar',
+            variant: 'danger',
+            size: 'sm',
+            action: 'gallery:delete-asset',
+            target: `${a.id}|${a.filename || a.publicId}`,
+          }) %>
+        </div>
+      </div>
+    </article>
+  <% }); %>
+</section>
+
+<% if (meta.totalPages > 1) { %>
+  <nav class="l-gallery__pager u-flex u-items-center u-justify-center u-gap-sm">
+    <% if (meta.hasPrev) { %>
+      <%- include('frontend/components/button/ui', {
+        label: '← Anterior',
+        variant: 'ghost',
+        size: 'sm',
+        href: buildPageHref(meta.page - 1),
+      }) %>
+    <% } %>
+    <span class="u-text-sm u-text-muted">
+      Página <%= meta.page %> de <%= meta.totalPages %>
+    </span>
+    <% if (meta.hasNext) { %>
+      <%- include('frontend/components/button/ui', {
+        label: 'Siguiente →',
+        variant: 'ghost',
+        size: 'sm',
+        href: buildPageHref(meta.page + 1),
+      }) %>
+    <% } %>
+  </nav>
+<% } %>

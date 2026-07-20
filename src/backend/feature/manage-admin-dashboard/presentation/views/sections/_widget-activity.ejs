@@ -1,0 +1,50 @@
+<%
+  const events = locals.recentActivity || [];
+  const escHtml = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const fmtAgo = (ms) => {
+    if (!ms) return '';
+    const diff = Math.round((Date.now() - ms) / 1000);
+    if (diff < 60) return `${diff}s`;
+    if (diff < 3600) return `${Math.round(diff / 60)} min`;
+    if (diff < 86400) return `${Math.round(diff / 3600)} h`;
+    return `${Math.round(diff / 86400)} d`;
+  };
+  const dotFor = (kind) => {
+    if (kind === 'tenant.created') return 'accent';
+    if (kind === 'tenant.enabled') return 'success';
+    if (kind === 'tenant.disabled') return 'warning';
+    return 'muted';
+  };
+  const markup = (msg) => escHtml(msg).replace(/`([^`]+)`/g, (_, s) => `<code>${s}</code>`);
+
+  let bodyContent = '';
+  if (events.length === 0) {
+    bodyContent = `<p class="l-home-widget__empty">Sin actividad en este momento.</p>`;
+  } else {
+    const listItems = events.map((e) => {
+      const dotColor = dotFor(e.kind);
+      const iconName = e.kind.startsWith('tenant') ? 'layers' : 'activity';
+      return `
+        <li class="l-activity-list__item">
+          <div class="l-activity-list__avatar-container">
+            <div class="l-activity-list__avatar l-activity-list__avatar--${dotColor}">
+              ${include('frontend/components/icon/ui', { name: iconName, size: 'sm' })}
+            </div>
+            <span class="l-activity-list__dot l-activity-list__dot--${dotColor === 'accent' ? 'success' : dotColor}" aria-hidden="true"></span>
+          </div>
+          <div class="l-activity-list__content">
+            <div class="l-activity-list__message">${markup(e.message)}</div>
+            <div class="l-activity-list__meta">hace ${fmtAgo(e.createdAt)}</div>
+          </div>
+        </li>
+      `;
+    }).join('');
+    bodyContent = `<ul class="l-activity-list">${listItems}</ul>`;
+  }
+%>
+<%- include('frontend/components/card/ui', {
+  title: 'Actividad reciente',
+  headerActions: `<span class="l-home-widget__link l-home-widget__link--muted">últimos ${events.length}</span>`,
+  body: bodyContent,
+  padding: 'md'
+}) %>

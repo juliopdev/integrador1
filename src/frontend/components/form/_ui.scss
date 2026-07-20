@@ -1,0 +1,16 @@
+@use 'sass:meta';
+
+// `form` es un componente de **comportamiento** (orquesta submit → fetch → errores). Su markup es el
+// `<form>` propio de cada página (no hay markup fijo que encapsular), por eso no lleva `ui.ejs`; aquí
+// solo el layout base reutilizable de un formulario. La página añade `class="c-form"` a su `<form>`.
+@mixin styles {
+  .c-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

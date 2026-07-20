@@ -1,77 +1,52 @@
-import bcrypt from 'bcryptjs';
+import { AuthError } from '../../../common/errors.js';
 
 /**
- * ES: Caso de Uso para inicio de sesión de Usuarios Finales del Inquilino (Headless API).
- * Verifica si el inquilino tiene habilitado el inicio de sesión de API; de lo contrario, arroja un error 503.
- * 
- * EN: Use Case for Tenant End-User login (Headless API).
- * Verifies if the tenant has enabled API login; otherwise, throws a 503 error.
+ * Fábrica para el caso de uso de inicio de sesión de usuario final (end-user) en el tenant.
+ * Valida credenciales locales de email/password. A diferencia del panel de administración,
+ * no requiere frase de acceso y rechaza cuentas administrativas (con passphraseHash) para prevenir
+ * accesos no autorizados.
+ *
+ * @param {Object} deps - Dependencias de inicio de sesión de usuario.
+ * @param {Object} deps.userRepository - Repositorio de usuarios del tenant.
+ * @param {Object} deps.verifier - Componente de validación de contraseñas.
+ * @param {function(string, string): Promise<boolean>} deps.verifier.verify - Método para verificar texto plano contra hash.
+ * @returns {(params: { email: string, password: string }) => Promise<{ userId: string, email: string }>} Función de caso de uso.
+ * @throws {AuthError} INVALID_CREDENTIALS - Si el email no existe, es OAuth-only o la contraseña no coincide.
+ * @throws {AuthError} ACCOUNT_SUSPENDED - Si la cuenta está suspendida.
+ * @throws {AuthError} FORBIDDEN_ADMIN_LOGIN - Si la cuenta tiene passphrase (es administrador).
  */
-export class LoginUserUseCase {
+export function makeLoginUser({ userRepository, verifier }) {
   /**
-   * @param {Object} cradle 
-   * @param {import('../infrastructure/user.repository').UserRepository} cradle.userRepository 
-   * @param {import('../../../kernel/container/di-register/auth/jwt.module').TokenService} cradle.tokenService
-   * @param {Object} cradle.tenant - ES: Registro del inquilino inyectado en el scope. EN: Tenant record injected in request scope.
+   * Autentica a un end-user con email y contraseña.
+   * Normaliza el email, verifica existencia, estado de la cuenta y que no sea una cuenta
+   * administrativa, y finalmente valida la contraseña contra el hash almacenado.
+   * @param {Object} params - Credenciales de inicio de sesión.
+   * @param {string} params.email - Correo del usuario.
+   * @param {string} params.password - Contraseña del usuario.
+   * @returns {Promise<{ userId: string, email: string }>} Datos del usuario autenticado.
+   * @throws {AuthError} INVALID_CREDENTIALS - Si las credenciales son inválidas.
+   * @throws {AuthError} ACCOUNT_SUSPENDED - Si la cuenta está suspendida.
+   * @throws {AuthError} FORBIDDEN_ADMIN_LOGIN - Si la cuenta es administrativa.
    */
-  constructor({ userRepository, tokenService, tenant }) {
-    this.userRepository = userRepository;
-    this.tokenService = tokenService;
-    this.tenant = tenant;
-  }
-
-  /**
-   * ES: Ejecuta la validación de login de usuario final.
-   * EN: Executes end-user login validation.
-   * 
-   * @param {Object} credentials 
-   * @param {string} credentials.email 
-   * @param {string} credentials.password 
-   * @returns {Promise<Object>}
-   */
-  async execute({ email, password }) {
-    // ES: Comprobar si el login de usuarios finales está habilitado (SQLite guarda 0 o 1).
-    // EN: Verify if end-user login is enabled (SQLite stores 0 or 1).
-    if (!this.tenant || this.tenant.apiAuthEnabled === 0) {
-      const error = new Error('API authentication is disabled for this tenant / Autenticación de API deshabilitada para este inquilino');
-      error.statusCode = 503;
-      throw error;
+  return async function loginUser({ email, password }) {
+    const normalized = String(email ?? '').trim().toLowerCase();
+    const user = userRepository.findByEmail(normalized);
+    if (!user || !user.passwordHash) {
+      // Email desconocido u OAuth-only: mensaje ambiguo para no leakear existencia de cuentas.
+      throw new AuthError('INVALID_CREDENTIALS', 'Credenciales inválidas.');
+    }
+    if (user.status === 'suspended') {
+      throw new AuthError('ACCOUNT_SUSPENDED', 'Tu cuenta está suspendida.');
+    }
+    if (user.passphraseHash) {
+      // Cuentas con passphrase son admins (Master/Staff). No pueden usar la ruta de end-user.
+      throw new AuthError('FORBIDDEN_ADMIN_LOGIN', 'Este endpoint es solo para clientes finales.');
     }
 
-    const user = await this.userRepository.findByEmail(email);
-    if (!user) {
-      throw new Error('Invalid email or password / Correo o contraseña inválidos');
+    const ok = await verifier.verify(password, user.passwordHash);
+    if (!ok) {
+      throw new AuthError('INVALID_CREDENTIALS', 'Credenciales inválidas.');
     }
-
-    if (user.status !== 'active') {
-      const error = new Error('User is suspended / Usuario suspendido');
-      error.statusCode = 403;
-      throw error;
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      throw new Error('Invalid email or password / Correo o contraseña inválidos');
-    }
-
-    const payload = {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      tenantId: this.tenant.id,
-    };
-
-    const accessToken = this.tokenService.signAccessToken(payload);
-    const refreshToken = this.tokenService.signRefreshToken(payload);
-
-    return {
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
-      accessToken,
-      refreshToken,
-    };
-  }
+    return { userId: user.id, email: user.email };
+  };
 }

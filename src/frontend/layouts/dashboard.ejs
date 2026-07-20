@@ -1,108 +1,199 @@
+<%
+  // Iter UX B4: `data-scope` distingue superficies. Convención de labels:
+  //   - platform (Superadmin): labels en UPPERCASE + letter-spacing (convención técnica).
+  //   - tenant (Master/Staff): labels en sentence-case (más humano, sin jerga).
+  // Los estilos que dependen del scope viven en `_ui.scss` de los form components, buscando
+  // `[data-scope="tenant"]` en la raíz del documento.
+  const _bodyScope = locals.user?.scope === 'platform' ? 'platform' : 'tenant';
+%>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="<%= locals.skin || 'default' %>" data-theme-mode="<%= locals.mode || 'system' %>" data-scope="<%= _bodyScope %>">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %> - SaaS Platform</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<%= stylesheet %>" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title><%= locals.pageTitle || 'Dashboard · Mi Baas' %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/styles/dashboard.css" />
 </head>
-<body class="theme-minimalist" data-theme="dark">
-  <div class="dashboard-layout">
-    <div class="container">
-      
-      <!-- ES: Header Común del Layout. EN: Common Layout Header. -->
-      <header class="dashboard-header">
-        <div class="dashboard-header__logo-area">
-          <h1 class="dashboard-header__title">Mi Baas Platform</h1>
-          <p class="dashboard-header__subtitle">Dashboard Administrativo</p>
-        </div>
-        <div class="dashboard-header__actions">
-          <button type="button" class="btn btn--secondary btn--sm" id="theme-toggle" title="Cambiar Tema / Switch Theme">
-            ☀️
-          </button>
-          <% if (locals.adminUser) { %>
-            <a href="/dashboard/logout" class="btn btn--secondary btn--sm">Cerrar Sesión / Logout</a>
-          <% } else { %>
-            <a href="/dashboard" class="btn btn--secondary btn--sm">&larr; Volver al Panel</a>
-          <% } %>
-        </div>
-      </header>
+<body>
+  <!-- Iter UX P0: barra móvil superior + overlay para drawer del sidebar. Sólo visible <768px
+       (display: none en desktop, ver dashboard.scss). El botón dispara `sidebar:mobile-toggle`
+       vía dispatcher; el overlay dispara la misma acción para cerrar tocando fuera. -->
+  <div class="l-mobile-topbar" aria-hidden="true">
+    <button type="button" class="l-mobile-topbar__toggle" data-action="sidebar:mobile-toggle" aria-label="Abrir menú lateral">
+      <%- include('frontend/components/icon/ui', { name: 'menu', size: 'lg' }) %>
+    </button>
+    <span class="l-mobile-topbar__brand"><%= locals.brandTitle || 'Mi Baas' %></span>
+  </div>
+  <div class="l-sidebar-backdrop" data-action="sidebar:mobile-toggle" aria-hidden="true"></div>
 
-      <!-- ES: Cuerpo de Contenido Principal. EN: Main Body Content. -->
-      <main class="dashboard-layout__content">
-        <%- body %>
+  <div class="l-dashboard-grid">
+    <!-- Barra Lateral (Iter 34): colapsable — el estado se persiste en localStorage y se aplica
+         en `dashboard.entry.js` antes de mostrar el layout para evitar flash de labels.
+         El componente es agnóstico de dominio: acá armamos el menú según rol/ámbito y lo pasamos
+         como datos. -->
+    <%
+      const _scope = locals.user && locals.user.scope;
+      const _cat = locals.category;
+      const _menu = [{ href: '/dashboard', icon: 'home', label: 'Inicio' }];
+      if (_scope === 'platform') {
+        _menu.push({ href: '/dashboard/frontends', icon: 'globe', label: 'Frontends' });
+        _menu.push({ href: '/dashboard/backends', icon: 'database', label: 'Backends' });
+        _menu.push({ href: '/dashboard/tenants', icon: 'layers', label: 'Tenants' });
+        _menu.push({ href: '/dashboard/health', icon: 'activity', label: 'Health' });
+        _menu.push({ href: '/dashboard/logs', icon: 'terminal', label: 'Logs' });
+      } else if (_cat === 'master') {
+        _menu.push({ href: '/dashboard/data', icon: 'chart', label: 'Datos' });
+        // P8.2: Biblioteca de medios — sólo visible si el tenant tiene al menos un provider
+        // de storage linkeado (Cloudinary o Box). El flag `hasStorageProvider` lo inyecta el
+        // view handler de cada página; para vistas que no lo pasen, no renderizamos el link
+        // (fail-closed: prefiero perder un link a mostrar uno que 404-ea).
+        if (locals.hasStorageProvider) {
+          _menu.push({ href: '/dashboard/gallery', icon: 'image', label: 'Biblioteca de medios' });
+        }
+        _menu.push({ href: '/dashboard/chat', icon: 'chat', label: 'Mensajes' });
+        _menu.push({ href: '/dashboard/notifications', icon: 'bell', label: 'Notificaciones' });
+        _menu.push({ href: '/dashboard/staff', icon: 'users', label: 'Staff' });
+        _menu.push({ href: '/dashboard/docs', icon: 'monitor', label: 'Documentación' });
+      } else if (_cat === 'staff') {
+        _menu.push({ href: '/dashboard/data', icon: 'chart', label: 'Datos' });
+        if (locals.isSupport) _menu.push({ href: '/dashboard/chat', icon: 'chat', label: 'Mensajes' });
+      }
+      // Superadmin: atajos externos a los proveedores (Clouding = VPS, Spaceship = registrador).
+      const _shortcuts = _scope === 'platform' ? [
+        { href: 'https://clouding.io/', icon: 'server', label: 'Clouding', title: 'Clouding (VPS)' },
+        { href: 'https://www.spaceship.com/', icon: 'send', label: 'Spaceship', title: 'Spaceship (dominios)' },
+      ] : [];
+    %>
+    <%
+      // Iter 52: sesión al footer del sidebar como dropdown. `roleLabel` sale del chrome para
+      // no reconstruirlo acá. El menu de la sesión se renderiza como `dropdown-menu` global al
+      // pie del layout (fuera del sidebar) para que su posicionamiento absoluto no herede
+      // clipping del `.c-sidebar` con `overflow-y: auto`.
+      const _roleLabel = (locals.user && locals.user.scope === 'platform')
+        ? 'Superadmin'
+        : (locals.category === 'master' ? 'Master' : 'Staff');
+    %>
+    <%- include('frontend/components/sidebar/ui', {
+      brandTitle: locals.brandTitle || 'Mi Baas',
+      activePath: locals.activePath,
+      menu: _menu,
+      shortcuts: _shortcuts,
+      userMenu: locals.user ? {
+        email: locals.user.email,
+        roleLabel: _roleLabel,
+        targetMenu: 'user-menu',
+      } : null,
+    }) %>
+
+    <!-- Área Principal -->
+    <div class="l-main-container" id="swup">
+      <main class="l-main transition-fade">
+        <%- include(locals.page, locals) %>
       </main>
-
     </div>
   </div>
 
-  <!-- ES: Carga de GSAP para micro-animaciones cliente -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <!-- Iter 52: dropdown de sesión (dispara desde el `c-user-pill` en el sidebar footer). El
+       `DropdownMenu` maneja click-outside + Escape + flip automático top/bottom y right-align. -->
+  <% if (locals.user) { %>
+    <%- include('frontend/components/dropdown-menu/ui', {
+      id: 'user-menu',
+      items: [
+        { label: 'Alternar tema (claro / oscuro)', icon: 'moon', action: 'theme:toggle-mode' },
+        { label: 'Configuración', icon: 'cog', action: 'modal:open', dataTarget: 'settings-modal' },
+        { label: 'Mi perfil', icon: 'user', disabled: true },
+        { label: 'Cerrar sesión', icon: 'log-out', action: 'user:logout', destructive: true },
+      ],
+    }) %>
+  <% } %>
+
+  <!-- Iter 54b Slice A: FAB de contacto directo con el Superadmin. Sólo se renderiza para
+       scope=tenant Y con al menos un canal (email o whatsapp) configurado — se decide server-side
+       para no filtrar strings vacíos al DOM.
+       Reclasificado a sección common/ (2026-07): hardcodea concepto de dominio (soporte al BaaS),
+       viola la regla "componentes son agnósticos de dominio" (views.md §2). -->
+  <% if (locals.user && locals.user.scope === 'tenant' && (locals.supportEmail || locals.supportWhatsapp)) { %>
+    <%- include('backend/common/views/sections/_support-fab', {
+      email: locals.supportEmail || '',
+      whatsapp: locals.supportWhatsapp || '',
+      userEmail: locals.user.email || '',
+      tenantSlug: (locals.tenant && locals.tenant.subdomain) || '',
+    }) %>
+  <% } %>
+
+  <%- include('frontend/components/toast/ui') %>
+
+  <!-- Iter 35/36 + P1.2: modal global de configuración con nav de secciones (hoy solo
+       "Apariencia" = componente `theme-settings`; nuevas secciones se agregan como items del
+       nav + panel). Cualquier página lo abre con `data-action="modal:open" data-target="settings-modal"`. -->
+  <%- include('frontend/components/modal/ui', {
+    id: 'settings-modal',
+    title: 'Configuración',
+    size: 'lg',
+    body: `
+      <div class="l-settings">
+        <nav class="l-settings__nav" aria-label="Secciones de configuración">
+          <span class="l-settings__nav-item l-settings__nav-item--active" aria-current="true">Apariencia</span>
+        </nav>
+        <div class="l-settings__panel">
+          ${include('frontend/components/theme-settings/ui')}
+        </div>
+      </div>
+    `,
+  }) %>
+
+  <%- include('frontend/components/confirm-dialog/ui') %>
+  <%- include('frontend/components/tooltip/ui') %>
+
+  <%# Iter UX A4: modal de confirmación destructiva con "type-to-confirm". El operador debe
+      escribir el identificador exacto para habilitar el botón — patrón estándar en dashboards
+      serios (GitHub, Vercel, Supabase). Reutilizable: el handler que lo abre puebla
+      `data-expected` con el string a escribir. %>
+  <%- include('frontend/components/modal/ui', {
+    id: 'confirm-typing-modal',
+    title: 'Confirmar eliminación',
+    size: 'md',
+    body: `
+      <p class="u-text-sm u-mb-md" data-confirm-typing-msg>
+        Esta acción no se puede deshacer.
+      </p>
+      <label class="u-text-sm u-text-muted u-mb-xs u-block" for="confirm-typing-input">
+        Escribí <strong data-confirm-typing-expected>—</strong> para confirmar:
+      </label>
+      <div class="c-input">
+        <input
+          id="confirm-typing-input"
+          type="text"
+          class="c-input__field"
+          autocomplete="off"
+          spellcheck="false"
+          data-confirm-typing-input
+        />
+      </div>
+    `,
+    footer: `
+      ${include('frontend/components/button/ui', {
+        label: 'Cancelar',
+        variant: 'ghost',
+        action: 'modal:close',
+        target: 'confirm-typing-modal',
+      })}
+      ${include('frontend/components/button/ui', {
+        label: 'Eliminar definitivamente',
+        variant: 'danger',
+        icon: 'trash',
+        action: 'confirm-typing:submit',
+        disabled: true,
+        class: 'js-confirm-typing-submit',
+      })}
+    `,
+  }) %>
+
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const body = document.body;
-      const toggleBtn = document.getElementById('theme-toggle');
-      
-      // ES: Cargar e inicializar tema guardado en localStorage.
-      const savedTheme = localStorage.getItem('theme') || 'dark';
-      body.setAttribute('data-theme', savedTheme);
-      if (toggleBtn) {
-        updateToggleButtonIcon(savedTheme);
-      }
-
-      // ES: Animación GSAP de entrada escalonada (stagger) para tarjetas de acción.
-      // if (document.querySelector('.action-card')) {
-      //   gsap.from('.action-card', {
-      //     opacity: 0,
-      //     y: 20,
-      //     scale: 0.96,
-      //     duration: 0.45,
-      //     stagger: 0.08,
-      //     ease: 'power2.out'
-      //   });
-      // }
-
-      // ES: Animación GSAP de entrada para la grilla o tabla de backends.
-      if (document.querySelector('.data-table__tr')) {
-        gsap.from('.data-table__tr', {
-          opacity: 0,
-          x: -15,
-          duration: 0.4,
-          stagger: 0.06,
-          ease: 'power2.out'
-        });
-      }
-
-      // ES: Alternador de tema Claro/Oscuro con micro-animación.
-      if (toggleBtn) {
-        toggleBtn.addEventListener('click', () => {
-          const currentTheme = body.getAttribute('data-theme');
-          const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-          gsap.to('.dashboard-panel', {
-            opacity: 0.4,
-            duration: 0.15,
-            onComplete: () => {
-              body.setAttribute('data-theme', newTheme);
-              localStorage.setItem('theme', newTheme);
-              updateToggleButtonIcon(newTheme);
-
-              gsap.to('.dashboard-panel', {
-                opacity: 1,
-                duration: 0.25
-              });
-            }
-          });
-        });
-      }
-
-      function updateToggleButtonIcon(theme) {
-        toggleBtn.innerHTML = theme === 'dark' ? '☀️' : '🌙';
-      }
-    });
+    window.userEmail = "<%= locals.user ? locals.user.email : '' %>";
   </script>
+  <!-- Módulos e interactividad cliente -->
+  <script type="module" src="/scripts/dashboard-entry.js"></script>
 </body>
 </html>

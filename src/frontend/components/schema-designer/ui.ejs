@@ -1,0 +1,53 @@
+<%
+  const initialSchema = locals.initialSchema || [];
+  const schemaString = typeof initialSchema === 'string'
+    ? initialSchema
+    : JSON.stringify(initialSchema);
+%>
+<div class="c-schema-designer" data-initial="<%= schemaString %>">
+  <div class="c-schema-designer__creator">
+    <div class="c-schema-designer__field-group">
+      <%- include('frontend/components/input/ui', {
+        name: 'new_field_name',
+        type: 'text',
+        label: 'Nombre de Columna',
+        class: 'js-designer-name'
+      }) %>
+    </div>
+    
+    <div class="c-schema-designer__field-group">
+      <label class="c-input__label">Tipo de Dato</label>
+      <div class="c-select js-designer-type-wrapper">
+        <select class="c-select__native js-designer-type" name="new_field_type">
+          <option value="string">Cadena (String)</option>
+          <option value="text">Texto Largo (Text)</option>
+          <option value="integer">Entero (Integer)</option>
+          <option value="float">Decimal (Float)</option>
+          <option value="boolean">Booleano (Boolean)</option>
+          <option value="date">Fecha (Date)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="c-schema-designer__field-group c-schema-designer__field-group--checkbox">
+      <%- include('frontend/components/checkbox/ui', {
+        name: 'new_field_required',
+        label: 'Requerido',
+        class: 'js-designer-required'
+      }) %>
+    </div>
+
+    <div class="c-schema-designer__field-group c-schema-designer__field-group--btn">
+      <button type="button" class="c-button c-button--primary js-designer-add">
+        Añadir Campo
+      </button>
+    </div>
+  </div>
+
+  <div class="c-schema-designer__list-container">
+    <h4 class="c-schema-designer__list-title">Columnas del Recurso</h4>
+    <div class="c-schema-designer__list js-designer-list"></div>
+  </div>
+
+  <input type="hidden" name="schema_json" class="js-designer-input" value="<%= schemaString %>">
+</div>

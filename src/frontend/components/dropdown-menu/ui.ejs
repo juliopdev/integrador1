@@ -1,0 +1,43 @@
+<%
+  const id = locals.id || 'dropdown';
+  const items = locals.items || [];
+%>
+<div class="c-dropdown-menu" id="<%= id %>" role="menu" data-open="false">
+  <ul class="c-dropdown-menu__list">
+    <% items.forEach(it => { %>
+      <li class="c-dropdown-menu__item-wrapper">
+        <% if (it.href) { %>
+          <a
+            class="c-dropdown-menu__item <%= it.destructive ? 'c-dropdown-menu__item--destructive' : '' %> <%= it.disabled ? 'c-dropdown-menu__item--disabled' : '' %>"
+            href="<%= it.href %>"
+            role="menuitem"
+            <% if (it.disabled) { %>aria-disabled="true" tabindex="-1" onclick="return false;"<% } %>
+          >
+            <% if (it.icon) { %>
+              <span class="c-dropdown-menu__icon" aria-hidden="true">
+                <%- include('frontend/components/icon/ui', { name: it.icon, size: 'sm' }) %>
+              </span>
+            <% } %>
+            <span class="c-dropdown-menu__label"><%= it.label %></span>
+          </a>
+        <% } else { %>
+          <button
+            type="button"
+            class="c-dropdown-menu__item <%= it.destructive ? 'c-dropdown-menu__item--destructive' : '' %>"
+            role="menuitem"
+            <% if (it.disabled) { %>disabled<% } %>
+            data-action="<%= it.action %>"
+            <% if (it.dataTarget) { %>data-target="<%= it.dataTarget %>"<% } %>
+          >
+            <% if (it.icon) { %>
+              <span class="c-dropdown-menu__icon" aria-hidden="true">
+                <%- include('frontend/components/icon/ui', { name: it.icon, size: 'sm' }) %>
+              </span>
+            <% } %>
+            <span class="c-dropdown-menu__label"><%= it.label %></span>
+          </button>
+        <% } %>
+      </li>
+    <% }) %>
+  </ul>
+</div>

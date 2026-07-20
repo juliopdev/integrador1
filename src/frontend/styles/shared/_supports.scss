@@ -1,0 +1,8 @@
+// Directivas de compatibilidad (@supports) reutilizables. Mixin para encapsular fallbacks de features
+// CSS modernas (p.ej. backdrop-filter en glassmorphism). Uso: `@include sup.backdrop-blur { ... }`.
+
+@mixin backdrop-blur {
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    @content;
+  }
+}

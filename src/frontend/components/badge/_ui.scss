@@ -1,17 +1,28 @@
-/**
- * ES: Estilos BEM para el componente badge/insignia.
- */
-.badge {
-  display: inline-block;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  border: 1px solid;
+@use 'sass:meta';
 
-  &--primary {
-    background: rgba(6, 182, 212, 0.1);
-    color: #22d3ee;
-    border-color: rgba(6, 182, 212, 0.3);
+@mixin styles {
+  .c-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-tight);
+
+    // Cada variante: fondo translúcido (color-mix) + color de estado sólido
+    &--success { background-color: color-mix(in srgb, var(--color-success) 15%, transparent); color: var(--color-success); }
+    &--warning { background-color: color-mix(in srgb, var(--color-warning) 15%, transparent); color: var(--color-warning); }
+    &--error { background-color: color-mix(in srgb, var(--color-error) 15%, transparent); color: var(--color-error); }
+    &--info { background-color: color-mix(in srgb, var(--color-info) 15%, transparent); color: var(--color-info); }
+    &--neutral {
+      background-color: var(--color-surface-raised);
+      color: var(--color-text-muted);
+      border: var(--border-thin) solid var(--color-border);
+    }
   }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
 }

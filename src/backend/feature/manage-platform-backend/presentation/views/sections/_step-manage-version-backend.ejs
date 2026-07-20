@@ -1,0 +1,203 @@
+<%
+  // Paso 1 (`_step-manage-version-backend`, PLAN-ux2 P7 / no-code.md §5): hub de versiones.
+  //
+  // 3 acciones posibles desde esta pantalla:
+  //   1. **Editar versión actual** → arma un draft en modo `edit` sobre la publicada activa
+  //      (re-publica la MISMA vN cuando terminás el wizard). Disponible sólo si hay publicado.
+  //   2. **Upgradear** → arma un draft en modo `upgrade`. La nueva versión es siempre
+  //      `max(versionesExistentes) + 1` — no depende de la activa (si retrocediste desde v3
+  //      hasta v1 y ahora upgradeás, el nuevo draft es v4, no v2).
+  //   3. **Activar versión del historial** → NO crea draft, NO recompila. Toma un snapshot
+  //      publicado previamente y lo reactiva. El motor conserva las columnas físicas (drops
+  //      ignorados en el DDL, adds idempotentes) para preservar la data ya escrita. Ver
+  //      antigravity/rollback en `.antigravity-overview/README.md` + `no-code.md §5`.
+  //
+  // El wizard-nav de este paso NO trae "Siguiente →": cada card decide su propia continuación.
+  const t = locals.activeTenant || {};
+  const state = locals.wizardState || {};
+  const published = state.publishedContract;
+  const draft = state.draftContract;
+  const versionMode = state.versionMode;
+  const backends = state.backends || [];
+
+  const numbers = backends.map((b) => Number(String(b.version).replace(/^v/, ''))).filter((n) => Number.isFinite(n));
+  const nextVersion = numbers.length ? `v${Math.max(...numbers) + 1}` : 'v1';
+  const hasHistory = backends.length > 0;
+
+  const startForm = (mode, label, disabled = false) => `
+    <form class="c-form" method="post" action="/api-system/v1/tenants/${t.id}/backend/draft/start" data-redirect="/dashboard/backends/${t.id}?step=provider">
+      <input type="hidden" name="mode" value="${mode}" />
+      ${include('frontend/components/button/ui', {
+        type: 'submit',
+        variant: 'primary',
+        size: 'sm',
+        label,
+        disabled,
+        class: 'u-w-full',
+      })}
+    </form>
+  `;
+
+  // ── Card 1: Editar versión actual ────────────────────────────────────
+  // Sólo tiene sentido si hay publicado. Sin él, deshabilitamos el CTA con hint hacia Upgrade —
+  // el operador ve por qué no puede editar en vez de no ver la opción.
+  const editBody = published
+    ? `
+      <div class="u-flex u-flex-col u-gap-xs">
+        <p class="u-text-sm u-mb-sm">
+          Modificá la estructura de la versión activa. Los cambios se aplican directamente sobre
+          <strong>${published.version}</strong> (misma tabla física, misma numeración) al publicar.
+        </p>
+        ${startForm('edit', `Editar ${published.version}`)}
+      </div>
+    `
+    : `
+      <div class="u-flex u-flex-col u-gap-xs">
+        <p class="u-text-sm u-mb-sm u-text-muted">
+          Todavía no hay versión publicada para este tenant. Usá <strong>Upgradear</strong> para
+          crear la primera (${nextVersion}).
+        </p>
+        ${startForm('edit', 'Editar (sin versión activa)', true)}
+      </div>
+    `;
+
+  // ── Card 2: Upgradear ────────────────────────────────────────────────
+  // Siempre disponible. `nextVersion` = maxVersion + 1 → si retrocediste, sube desde el máximo
+  // histórico, no desde la actual (no queremos re-usar números).
+  const upgradeBody = `
+    <div class="u-flex u-flex-col u-gap-xs">
+      <p class="u-text-sm u-mb-sm">
+        ${hasHistory
+          ? `Congelá el estado actual y comenzá una nueva versión (<strong>${nextVersion}</strong>). Los datos ya escritos persisten y podés volver a cualquier versión anterior desde el historial.`
+          : `Creá la primera versión del contrato del tenant (<strong>${nextVersion}</strong>). Es el punto de partida del motor No-Code.`
+        }
+      </p>
+      ${startForm('upgrade', hasHistory ? `Upgradear a ${nextVersion}` : `Comenzar ${nextVersion}`)}
+    </div>
+  `;
+
+  // ── Card 3: Historial de versiones (interactivo) ─────────────────────
+  // Cada fila: chip "Activa" para la publicada + botón "Activar" para las demás. El botón usa el
+  // modal type-to-confirm compartido (ya montado en dashboard.ejs) para evitar activaciones
+  // accidentales. Al confirmar, hacemos POST al endpoint `backend/activate/:version`.
+  let historyHtml = '';
+  if (hasHistory) {
+    historyHtml = include('frontend/components/data-table/ui', {
+      columns: [
+        { key: 'version', label: 'Versión' },
+        { key: 'status', label: 'Estado' },
+        { key: 'publishedAt', label: 'Publicado' },
+        { key: 'actions', label: 'Acciones', align: 'right' },
+      ],
+      rows: backends
+        // Orden: publicada primero, luego el resto por número descendente (más nuevas primero).
+        .slice()
+        .sort((a, b) => {
+          if (a.status === 'published') return -1;
+          if (b.status === 'published') return 1;
+          const na = Number(String(a.version).replace(/^v/, '')) || 0;
+          const nb = Number(String(b.version).replace(/^v/, '')) || 0;
+          return nb - na;
+        })
+        .map((b) => {
+          const isActive = b.status === 'published';
+          const isDraft = b.status === 'draft';
+          let variant = 'neutral';
+          let label = b.status;
+          if (isActive) { variant = 'success'; label = 'Activa'; }
+          else if (b.status === 'retired') { variant = 'neutral'; label = 'Retirada'; }
+          else if (isDraft) { variant = 'warning'; label = 'Borrador'; }
+
+          // Acciones por fila:
+          //   - Activa: botón "Ver detalle" (link al read-only) — no se puede activar de nuevo.
+          //   - Retirada: "Ver detalle" + "Activar" (dispara type-to-confirm).
+          //   - Borrador: sólo "Ver detalle" (activar un draft no tiene sentido; se publica desde
+          //     el paso 7 del wizard).
+          const detailLink = include('frontend/components/button/ui', {
+            label: 'Ver detalle',
+            icon: 'eye',
+            variant: 'ghost',
+            size: 'sm',
+            href: `/dashboard/backends/${t.id}/versions/${b.version}`,
+          });
+          const activateBtn = (!isActive && !isDraft)
+            ? include('frontend/components/button/ui', {
+                label: `Activar ${b.version}`,
+                icon: 'check',
+                variant: 'primary',
+                size: 'sm',
+                action: 'contract:activate-version',
+                // target encapsula tenantId|version|subdomain: el handler parsea y arma el
+                // modal type-to-confirm y luego el POST.
+                target: `${t.id}|${b.version}|${t.subdomain}`,
+              })
+            : '';
+          // Iter UX P2.4: eliminar sólo aplica a versiones retiradas. La activa nunca se elimina
+          // (hay que rollback-ear primero) y los borradores se descartan desde "Reiniciar".
+          const deleteBtn = (!isActive && !isDraft)
+            ? include('frontend/components/button/ui', {
+                label: '',
+                icon: 'trash',
+                variant: 'ghost',
+                size: 'sm',
+                ariaLabel: `Eliminar ${b.version}`,
+                action: 'contract:delete-version',
+                target: `${t.id}|${b.version}|${t.subdomain}`,
+              })
+            : '';
+
+          return {
+            version: `<code class="u-text-strong">${b.version}</code>${isActive ? ' <span class="u-text-xs u-text-muted">— ahora</span>' : ''}`,
+            status: include('frontend/components/badge/ui', { variant, label }),
+            publishedAt: b.publishedAt ? new Date(b.publishedAt).toLocaleString('es-ES') : '—',
+            actions: `<span class="u-flex u-gap-xs u-justify-end">${detailLink}${activateBtn}${deleteBtn}</span>`,
+          };
+        }),
+      emptyState: null,
+    });
+  }
+%>
+
+<div class="u-flex u-flex-col u-gap-md">
+  <% if (draft && versionMode) { %>
+    <%# Draft en curso: las cards Editar/Upgrade se congelan (única fuente de verdad = el draft).
+        El operador termina o reinicia; después vuelven las opciones. %>
+    <%- include('frontend/components/card/ui', {
+      titleHtml: `Borrador en curso: <code>${draft.version}</code>`,
+      body: `
+        <div class="u-flex u-items-center u-gap-xs u-text-sm">
+          <svg class="c-icon c-icon--sm u-text-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+          <span>Modo ${include('frontend/components/badge/ui', {
+            variant: versionMode === 'edit' ? 'warning' : 'success',
+            label: versionMode === 'edit' ? `Editando ${draft.version}` : `Upgrade a ${draft.version}`,
+          })} — avanzá con <strong>Continuar</strong>. Para cambiar de modo usá <strong>Reiniciar</strong>.</span>
+        </div>
+      `,
+      padding: 'md',
+    }) %>
+  <% } else { %>
+    <div class="version-choice">
+      <%- include('frontend/components/card/ui', {
+        titleHtml: `<div class="u-flex u-items-center u-gap-xs"><svg class="c-icon c-icon--md u-text-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg> <span>Editar versión actual</span></div>`,
+        subtitle: published ? `Actualizar ${published.version} (misma versión)` : 'Requiere una versión activa',
+        body: editBody,
+        padding: 'md',
+      }) %>
+      <%- include('frontend/components/card/ui', {
+        titleHtml: `<div class="u-flex u-items-center u-gap-xs"><svg class="c-icon c-icon--md u-text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg> <span>Upgradear versión</span></div>`,
+        subtitle: `Crear nueva versión (${nextVersion})`,
+        body: upgradeBody,
+        padding: 'md',
+      }) %>
+    </div>
+  <% } %>
+
+  <% if (hasHistory) { %>
+    <%- include('frontend/components/card/ui', {
+      title: 'Historial de versiones',
+      subtitle: 'Activá una versión existente para hacer rollback o roll-forward. Los datos escritos bajo cualquier versión persisten — el motor conserva las columnas físicas y las oculta según el schema activo.',
+      body: historyHtml,
+      padding: 'md',
+    }) %>
+  <% } %>
+</div>

@@ -1,0 +1,33 @@
+<%
+  const code = locals.statusCode || 500;
+  const errorTitle = locals.title || 'Ha ocurrido un error';
+  const attempt = locals.actionAttempted || '';
+  const msg = locals.message || 'Ocurrió un error inesperado en el sistema.';
+  const recUrl = locals.recoveryUrl || '/dashboard';
+%>
+<div class="u-flex u-flex-col u-items-center u-justify-center u-w-full" style="min-height: 60vh; padding: var(--space-4);">
+  <div class="u-w-full" style="max-width: 520px;">
+    <%- include('frontend/components/card/ui', {
+      title: `${code} · ${errorTitle}`,
+      body: `
+        <div class="u-flex u-flex-col u-gap-md">
+          ${attempt ? `<p class="u-text-sm u-font-medium u-text-strong u-m-0">Intentando realizar: <span class="u-text-muted">${attempt}</span></p>` : ''}
+          <p class="u-text-sm u-text-muted u-m-0">${msg}</p>
+          <div class="u-flex u-justify-between u-items-center u-mt-md">
+            ${include('frontend/components/button/ui', {
+              href: recUrl,
+              label: 'Volver a Intentar',
+              variant: 'primary'
+            })}
+            ${include('frontend/components/button/ui', {
+              href: '/dashboard',
+              label: 'Ir al Inicio',
+              variant: 'ghost'
+            })}
+          </div>
+        </div>
+      `,
+      padding: 'md'
+    }) %>
+  </div>
+</div>

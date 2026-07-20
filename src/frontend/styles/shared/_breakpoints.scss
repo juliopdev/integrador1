@@ -1,0 +1,64 @@
+@use 'sass:map';
+
+$breakpoints: (
+  swatch: 274px,
+  mobile: 576px,
+  tablet: 768px,
+  laptop: 1024px,
+  desktop: 1200px,
+  wide: 1440px
+) !default;
+
+@function _breakpoint($name) {
+  @if not map.has-key($breakpoints, $name) {
+    @error "Breakpoint '#{$name}' no existe.";
+  }
+  @return map.get($breakpoints, $name);
+}
+@function _breakpoint-next($name) {
+  $keys: map.keys($breakpoints);
+  $index: index($keys, $name);
+  @if not $index {
+    @error "Breakpoint '#{$name}' no existe.";
+  }
+  @if $index == length($keys) {
+    @return null;
+  }
+  @return nth($keys, $index + 1);
+}
+@function _breakpoint-max($name) {
+  $next: _breakpoint-next($name);
+  @if $next == null {
+    @return null;
+  }
+  @return calc(_breakpoint($next) - 1px);
+}
+
+@mixin up($breakpoint) {
+  @media (min-width: _breakpoint($breakpoint)) {
+    @content;
+  }
+}
+@mixin down($breakpoint) {
+  $max: calc(_breakpoint($breakpoint) - 1px);
+  @media (max-width: $max) {
+    @content;
+  }
+}
+@mixin between($from, $to) {
+  @media (min-width: _breakpoint($from)) and (max-width: calc(_breakpoint($to) - 1px)) {
+    @content;
+  }
+}
+@mixin only($breakpoint) {
+  $max: _breakpoint-max($breakpoint);
+  @if $max == null {
+    @include up($breakpoint) {
+      @content;
+    }
+  } @else {
+    @media (min-width: _breakpoint($breakpoint)) and (max-width: $max) {
+      @content;
+    }
+  }
+}

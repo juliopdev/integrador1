@@ -1,0 +1,361 @@
+<%
+  const r = locals.resource;
+  const records = locals.records || [];
+  const storeError = locals.storeError;
+  const pagination = locals.pagination || { limit: 20, offset: 0, count: records.length };
+
+  let card;
+  if (storeError === 'STORE_NOT_CONFIGURED') {
+    card = {
+      title: 'Sin proveedor de datos linkeado',
+      body: `
+        <p class="u-text-muted u-text-sm u-m-0">
+          El tenant aún no tiene su proveedor <code>${r.store === 'sql' ? 'Postgres (Neon)' : 'Mongo Atlas'}</code>
+          configurado. El Superadmin debe linkearlo desde el asistente No-Code para poder ver o
+          gestionar registros.
+        </p>
+      `,
+    };
+  } else if (records.length === 0) {
+    card = {
+      title: 'Sin registros',
+      body: `
+        <p class="u-text-muted u-text-sm u-m-0">
+          Aún no hay registros en esta sección. Puedes agregar el primero usando el botón "+ Nuevo record"
+          o importar un archivo CSV.
+        </p>
+      `,
+    };
+  } else {
+    const cols = [
+      { key: 'id', label: 'ID' },
+      ...r.fields.map((f) => ({ key: f.name, label: f.name.toUpperCase() })),
+      { key: 'created_at', label: 'CREADO EL', align: 'right' },
+      { key: 'actions', label: '', align: 'right' },
+    ];
+
+    const escapeCell = (field, v) => {
+      const key = field.name;
+      if (v == null) return '<span class="u-text-muted">—</span>';
+      
+      // Si es de tipo date o datetime, formatea amigablemente
+      if (field.type === 'date' || field.type === 'datetime') {
+        let val = v;
+        if (typeof val === 'string' && /^\d+$/.test(val)) {
+          val = Number(val);
+        }
+        
+        // Evitar desfase de zona horaria en fechas de calendario puro (YYYY-MM-DD)
+        if (field.type === 'date' && typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
+          const [year, month, day] = val.split('-');
+          return `${day}/${month}/${year}`;
+        }
+
+        const dateObj = new Date(val);
+        if (!isNaN(dateObj.getTime())) {
+          return field.type === 'date'
+            ? dateObj.toLocaleDateString('es-ES', { dateStyle: 'short' })
+            : dateObj.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
+        }
+      }
+
+      // Si es una URL de imagen o tipo asset, renderiza miniatura optimizada
+      const strVal = String(v);
+      if (
+        field.type === 'asset' ||
+        key.toLowerCase().includes('image') || 
+        key.toLowerCase().includes('url') || 
+        (strVal.startsWith('http') && (strVal.includes('.jpg') || strVal.includes('.png') || strVal.includes('.webp') || strVal.includes('unsplash.com')))
+      ) {
+        let optimizedUrl = strVal;
+        if (strVal.includes('unsplash.com')) {
+          try {
+            const urlObj = new URL(strVal);
+            urlObj.searchParams.set('w', '100');
+            urlObj.searchParams.set('h', '100');
+            urlObj.searchParams.set('fit', 'crop');
+            urlObj.searchParams.set('q', '80');
+            urlObj.searchParams.set('auto', 'format');
+            optimizedUrl = urlObj.toString();
+          } catch(e) {
+            // fallback
+          }
+        }
+        return `<img src="${optimizedUrl}" class="c-table-thumbnail" alt="preview" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" /><span class="c-badge c-badge--neutral u-text-xs" style="display:none;">IMG</span>`;
+      }
+
+      // Si es precio, formatea como moneda
+      if (key.toLowerCase().includes('price') || key.toLowerCase().includes('precio')) {
+        const num = Number(v);
+        if (!isNaN(num)) return `<strong>$${num.toFixed(2)}</strong>`;
+      }
+
+      // Si es booleano, renderiza badge
+      if (typeof v === 'boolean' || field.type === 'boolean') {
+        const boolVal = v === true || v === 'true' || v === 1 || v === '1';
+        const labelLower = key.toLowerCase();
+        let activeLabel = 'Sí';
+        let inactiveLabel = 'No';
+        if (labelLower.includes('active') || labelLower.includes('público') || labelLower.includes('publico')) {
+          activeLabel = 'Público';
+          inactiveLabel = 'Borrador';
+        }
+        return `<span class="c-badge c-badge--${boolVal ? 'success' : 'neutral'}">${boolVal ? activeLabel : inactiveLabel}</span>`;
+      }
+
+      if (typeof v === 'object') return `<code class="u-text-xs">${JSON.stringify(v)}</code>`;
+      return strVal.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    };
+
+    const rows = records.map((rec) => {
+      const shortId = rec.id ? `#${rec.id.slice(0, 8)}` : '—';
+      const row = { id: `<code class="c-badge c-badge--neutral u-text-xs" title="${rec.id || ''}">${shortId}</code>` };
+      for (const f of r.fields) {
+        row[f.name] = escapeCell(f, rec[f.name]);
+      }
+      
+      let dateObj = null;
+      if (rec.created_at) {
+        let val = rec.created_at;
+        if (typeof val === 'string' && /^\d+$/.test(val)) {
+          val = Number(val);
+        }
+        dateObj = new Date(val);
+      }
+      row.created_at = dateObj && !isNaN(dateObj.getTime())
+        ? dateObj.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })
+        : '—';
+
+      const editBtn = include('frontend/components/button/ui', {
+        label: 'Editar',
+        icon: 'pencil',
+        href: `/dashboard/data/${r.name}/${rec.id}/edit`,
+        variant: 'ghost',
+        size: 'sm',
+      });
+      const deleteBtn = include('frontend/components/button/ui', {
+        label: 'Eliminar',
+        icon: 'trash',
+        type: 'submit',
+        variant: 'ghost',
+        size: 'sm',
+        class: 'u-text-error',
+      });
+      const deleteForm = `
+        <form class="c-form" method="post" action="/api-system/v1/data/${r.name}/${rec.id}" data-method="delete" data-redirect="/dashboard/data/${r.name}" data-confirm="¿Estás seguro de que deseas eliminar este registro?">
+          ${deleteBtn}
+        </form>
+      `;
+      row.actions = `<div class="u-flex u-gap-xs u-justify-end">${editBtn}${deleteForm}</div>`;
+      return row;
+    });
+
+    const tableHtml = include('frontend/components/data-table/ui', {
+      columns: cols,
+      rows,
+      emptyState: null,
+    });
+
+    const searchHtml = include('frontend/components/search-input/ui', {
+      name: 'query',
+      placeholder: 'Buscar en todos los campos...',
+      id: 'table-search-input',
+    });
+
+    const paginationHtml = include('frontend/components/pagination/ui', {
+      currentPage: 1,
+      totalPages: 1,
+    });
+
+    // Barra de filtros y buscador
+    const toolbarHtml = `
+      <div class="l-table-toolbar" style="display: flex; gap: var(--space-3); margin-bottom: var(--space-4); flex-wrap: wrap; align-items: center; width: 100%;">
+        <div style="flex: 1; min-width: 15rem;">
+          ${searchHtml}
+        </div>
+        <div style="display: flex; gap: var(--space-2); align-items: center;">
+          <span style="font-size: var(--font-size-xs); color: var(--color-text-muted); font-weight: var(--font-weight-medium); white-space: nowrap;">FILTRAR POR ESTADO:</span>
+          <select id="table-state-filter" class="c-select" style="padding: 0 var(--space-4); height: 38px; border-radius: var(--radius-sm); border: var(--border-thin) solid var(--color-border); background: var(--color-surface); color: var(--color-text); cursor: pointer; font-size: var(--font-size-sm);">
+            <option value="all">Todos los registros</option>
+            <option value="público">Público</option>
+            <option value="borrador">Borrador</option>
+          </select>
+        </div>
+      </div>
+    `;
+
+    card = {
+      title: 'Elementos guardados',
+      headerActions: `<span class="u-text-muted u-text-xs" id="table-rows-count-label">Mostrando ${pagination.count} registros</span>`,
+      body: `
+        ${toolbarHtml}
+        ${tableHtml}
+        <div class="u-mt-md" id="table-pagination-container">
+          ${paginationHtml}
+        </div>
+      `,
+    };
+  }
+%>
+<%- include('frontend/components/card/ui', {
+  title: card.title,
+  headerActions: card.headerActions || null,
+  body: card.body,
+  padding: 'md',
+}) %>
+
+<% if (records.length > 0 && storeError !== 'STORE_NOT_CONFIGURED') { %>
+  <!-- Script para Búsqueda y Filtro en Tiempo Real en Cliente -->
+  <script>
+    (() => {
+      const initTableFilter = () => {
+        const container = document.getElementById('table-pagination-container');
+        const parent = container ? container.closest('.c-card') : document;
+        const searchInput = parent.querySelector('.c-search-input__field');
+        const clearBtn = parent.querySelector('.c-search-input__clear');
+        const stateFilter = parent.querySelector('#table-state-filter');
+        const tableRows = Array.from(parent.querySelectorAll('.c-data-table__body .c-data-table__row'));
+        const countLabel = parent.querySelector('#table-rows-count-label');
+        const prevBtn = container ? container.querySelector('.c-pagination__btn:first-of-type') : null;
+        const nextBtn = container ? container.querySelector('.c-pagination__btn:last-of-type') : null;
+        const currentLabel = container ? container.querySelector('.c-pagination__current') : null;
+        const totalLabel = container ? container.querySelector('.c-pagination__total') : null;
+
+        if (tableRows.length === 0) {
+          if (container) container.style.display = 'none';
+          return;
+        }
+
+        let filteredRows = [...tableRows];
+        let currentPage = 1;
+        const itemsPerPage = 20;
+
+        function updateTable() {
+          const totalPages = Math.max(1, Math.ceil(filteredRows.length / itemsPerPage));
+          if (currentPage > totalPages) currentPage = totalPages;
+          if (currentPage < 1) currentPage = 1;
+
+          // Ocultar todas las filas
+          tableRows.forEach(row => row.style.display = 'none');
+
+          // Mostrar las de la página actual
+          const start = (currentPage - 1) * itemsPerPage;
+          const end = start + itemsPerPage;
+          const pageRows = filteredRows.slice(start, end);
+          pageRows.forEach(row => row.style.display = '');
+
+          // Actualizar etiquetas
+          if (currentLabel) currentLabel.textContent = currentPage;
+          if (totalLabel) totalLabel.textContent = totalPages;
+
+          if (countLabel) {
+            countLabel.textContent = `Mostrando ${filteredRows.length} registros`;
+          }
+
+          if (prevBtn) {
+            if (currentPage === 1) {
+              prevBtn.setAttribute('disabled', 'true');
+            } else {
+              prevBtn.removeAttribute('disabled');
+            }
+          }
+          if (nextBtn) {
+            if (currentPage === totalPages) {
+              nextBtn.setAttribute('disabled', 'true');
+            } else {
+              nextBtn.removeAttribute('disabled');
+            }
+          }
+
+          if (container) {
+            container.style.display = filteredRows.length <= itemsPerPage ? 'none' : '';
+          }
+        }
+
+        function filterTable() {
+          const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+          const stateQuery = stateFilter ? stateFilter.value.toLowerCase() : 'all';
+
+          filteredRows = tableRows.filter(row => {
+            let matchesSearch = false;
+            let matchesState = true;
+
+            // 1. Buscador global
+            const cells = Array.from(row.querySelectorAll('.c-data-table__cell'));
+            if (query === '') {
+              matchesSearch = true;
+            } else {
+              for (let i = 0; i < cells.length - 1; i++) {
+                if (cells[i].textContent.toLowerCase().includes(query)) {
+                  matchesSearch = true;
+                  break;
+                }
+              }
+            }
+
+            // 2. Estado
+            if (stateQuery !== 'all') {
+              const badge = row.querySelector('.c-badge');
+              if (badge) {
+                const badgeText = badge.textContent.toLowerCase().trim();
+                if (badgeText !== stateQuery) {
+                  matchesState = false;
+                }
+              } else {
+                matchesState = false;
+              }
+            }
+
+            return matchesSearch && matchesState;
+          });
+
+          currentPage = 1;
+          updateTable();
+        }
+
+        if (searchInput) {
+          searchInput.addEventListener('input', filterTable);
+        }
+
+        if (clearBtn) {
+          clearBtn.addEventListener('click', () => {
+            setTimeout(() => {
+              filterTable();
+            }, 0);
+          });
+        }
+
+        if (stateFilter) {
+          stateFilter.addEventListener('change', filterTable);
+        }
+
+        if (prevBtn) {
+          prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+              currentPage--;
+              updateTable();
+            }
+          });
+        }
+
+        if (nextBtn) {
+          nextBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+            if (currentPage < totalPages) {
+              currentPage++;
+              updateTable();
+            }
+          });
+        }
+
+        updateTable();
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTableFilter);
+      } else {
+        initTableFilter();
+      }
+    })();
+  </script>
+<% } %>

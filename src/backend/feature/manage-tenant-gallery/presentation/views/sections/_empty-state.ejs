@@ -1,0 +1,16 @@
+<%
+  const hasFilters = Boolean(locals.hasFilters);
+%>
+<section class="c-card c-card--p-lg">
+  <div class="c-card__body u-text-center">
+    <p class="u-text-sm u-text-muted">
+      <% if (hasFilters) { %>
+        No hay archivos que coincidan con los filtros seleccionados.
+        <a href="/dashboard/gallery">Limpiar filtros</a>.
+      <% } else { %>
+        Aún no hay archivos en tu biblioteca. Se registran automáticamente cuando tus usuarios
+        suben imágenes o documentos desde tu app.
+      <% } %>
+    </p>
+  </div>
+</section>

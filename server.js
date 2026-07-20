@@ -1,23 +1,42 @@
-import app from './src/backend/kernel/app.js';
+/**
+ * @file Punto de entrada del servidor HTTP principal (proceso PM2 "baas-server").
+ * Inicializa Fastify, ejecuta migraciones Drizzle de plataforma, siembra el superadmin
+ * por defecto, verifica la unicidad del superadmin, y levanta el listener.
+ */
+
 import { env } from './src/backend/config/env.js';
+import { migratePlatform } from './src/backend/config/drizzle/migrator.js';
+import { seedSuperadmin, assertSingleSuperadmin } from './src/backend/config/seed-superadmin.js';
+import { buildApp } from './src/backend/kernel/app.js';
+
+migratePlatform();
+seedSuperadmin();
+assertSingleSuperadmin();
+
+const app = await buildApp();
 
 /**
- * ES: Función autoejecutable encargada de arrancar el servidor Fastify en el puerto configurado.
- * Maneja excepciones críticas de inicio deteniendo de forma segura el proceso del sistema.
- * 
- * EN: Self-executing function responsible for booting up the Fastify server on the configured port.
- * Handles critical startup exceptions by safely terminating the system process.
+ * Cierra el servidor de forma ordenada al recibir señales del sistema operativo.
+ * @param {'SIGINT'|'SIGTERM'} signal - Señal de terminación recibida.
  */
-const start = async () => {
+const shutdown = async (signal) => {
+  app.log.info(`[server] Recibida ${signal}, apagando servidor de forma ordenada...`);
   try {
-    // ES: Escucha en todas las interfaces de red locales (0.0.0.0) en el puerto indicado.
-    // EN: Listen on all local network interfaces (0.0.0.0) on the specified port.
-    await app.listen({ port: env.PORT, host: '0.0.0.0' });
-    app.log.info(`🚀 Server listening on port ${env.PORT} in ${env.NODE_ENV} mode`);
+    await app.close();
+    app.log.info('[server] Servidor apagado con exito.');
+    process.exit(0);
   } catch (err) {
     app.log.error(err);
     process.exit(1);
   }
 };
 
-start();
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+try {
+  await app.listen({ port: env.PORT, host: '0.0.0.0' });
+} catch (err) {
+  app.log.error(err);
+  process.exit(1);
+}

@@ -1,0 +1,85 @@
+<%
+  const name = locals.name || '';
+  const label = locals.label || '';
+  const options = locals.options || [];
+  const placeholder = locals.placeholder || 'Seleccione una opción';
+  const searchable = locals.searchable || false;
+  const disabled = locals.disabled || false;
+  const required = locals.required || false;
+  const error = locals.error || null;
+  const id = locals.id || ('select-' + name);
+
+  const selectedOption = options.find(o => o.selected) || null;
+  const initialValue = selectedOption ? selectedOption.value : '';
+  const initialLabel = selectedOption ? selectedOption.label : placeholder;
+%>
+<div class="c-input c-select" data-invalid="<%= error ? 'true' : 'false' %>" data-open="false" <% if (disabled) { %>data-disabled="true"<% } %>>
+  <% if (label) { %>
+    <label class="c-input__label" for="<%= id %>-trigger"><%= label %></label>
+  <% } %>
+  <div class="c-input__wrapper">
+    <select
+      class="c-select__native"
+      id="<%= id %>"
+      name="<%= name %>"
+      <% if (disabled) { %>disabled<% } %>
+      <% if (required) { %>required<% } %>
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <option value="" <% if (!initialValue) { %>selected<% } %>><%= placeholder %></option>
+      <% options.forEach(o => { %>
+        <option value="<%= o.value %>" <% if (o.value === initialValue) { %>selected<% } %>><%= o.label %></option>
+      <% }) %>
+    </select>
+
+    <button
+      type="button"
+      class="c-select__trigger"
+      id="<%= id %>-trigger"
+      aria-haspopup="listbox"
+      aria-expanded="false"
+      <% if (disabled) { %>disabled<% } %>
+    >
+      <span class="c-select__trigger-label"><%= initialLabel %></span>
+      <span class="c-select__trigger-arrow" aria-hidden="true">
+        <svg class="c-icon c-icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </button>
+
+    <div class="c-select__dropdown" role="listbox" aria-labelledby="<%= id %>-trigger">
+      <% if (searchable) { %>
+        <div class="c-select__search-wrapper">
+          <input
+            type="text"
+            class="c-select__search"
+            placeholder="Buscar..."
+            autocomplete="off"
+            tabindex="-1"
+          />
+        </div>
+      <% } %>
+      <ul class="c-select__options">
+        <li
+          class="c-select__option <%= !initialValue ? 'c-select__option--selected' : '' %>"
+          data-value=""
+          role="option"
+          aria-selected="<%= !initialValue ? 'true' : 'false' %>"
+        >
+          <%= placeholder %>
+        </li>
+        <% options.forEach(o => { %>
+          <li
+            class="c-select__option <%= o.value === initialValue ? 'c-select__option--selected' : '' %>"
+            data-value="<%= o.value %>"
+            role="option"
+            aria-selected="<%= o.value === initialValue ? 'true' : 'false' %>"
+          >
+            <%= o.label %>
+          </li>
+        <% }) %>
+      </ul>
+    </div>
+  </div>
+  <span class="c-input__error"><%= error || '' %></span>
+</div>

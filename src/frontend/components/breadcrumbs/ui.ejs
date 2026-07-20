@@ -1,0 +1,29 @@
+<%
+  // Breadcrumbs semánticos: `<nav aria-label="Breadcrumb">` + `<ol>`. Cada item con `label`
+  // (obligatorio) y `href` opcional — sin href = crumb actual (marcado con `aria-current="page"`).
+  // El separador `›` es decorativo (`aria-hidden`). Ver views.md (accesibilidad).
+  //
+  // Un crumb intermedio cuyo `href` coincide con `currentPath` NO se renderiza como link — al
+  // clickearlo el usuario recargaría la misma página (ej.: en `/dashboard/backends/:id` el crumb
+  // "yumi" apunta al propio wizard). El caller pasa `currentPath: locals.activePath` para que la
+  // decisión sea única y semántica. Sin `currentPath` el componente respeta el `href` del caller.
+  const items = locals.items || [];
+  const currentPath = locals.currentPath || null;
+  const isSelfLink = (href) => currentPath !== null && href === currentPath;
+%>
+<nav class="c-breadcrumbs" aria-label="Breadcrumb">
+  <ol class="c-breadcrumbs__list">
+    <% items.forEach((it, i) => { %>
+      <li class="c-breadcrumbs__item">
+        <% if (it.href && i < items.length - 1 && !isSelfLink(it.href)) { %>
+          <a class="c-breadcrumbs__link" href="<%= it.href %>"><%= it.label %></a>
+        <% } else { %>
+          <span class="c-breadcrumbs__current"<% if (i === items.length - 1) { %> aria-current="page"<% } %>><%= it.label %></span>
+        <% } %>
+        <% if (i < items.length - 1) { %>
+          <span class="c-breadcrumbs__separator" aria-hidden="true">›</span>
+        <% } %>
+      </li>
+    <% }); %>
+  </ol>
+</nav>

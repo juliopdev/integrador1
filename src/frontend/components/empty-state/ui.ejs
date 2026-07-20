@@ -1,0 +1,31 @@
+<%
+  const title = locals.title || '';
+  const message = locals.message || null;
+  const icon = locals.icon || null;
+  // CTA acepta `href` (navegar), `action` (bus event) o `target` (para modales). El botón usa el
+  // componente estándar `c-button` que ya sabe elegir entre `<a>` (href) y `<button>` (action).
+  const cta = locals.cta || null; // { label, href?, action?, target?, icon?, variant? }
+%>
+<div class="c-empty-state">
+  <% if (icon) { %>
+    <%# Usa el componente Icon (SVG inline). El wrapper c-empty-state__icon aplica tamaño y color
+        vía CSS (no depende de icon-fonts que el proyecto no tiene). %>
+    <span class="c-empty-state__icon" aria-hidden="true">
+      <%- include('../icon/ui', { name: icon, size: 'lg' }) %>
+    </span>
+  <% } %>
+  <h3 class="c-empty-state__title"><%= title %></h3>
+  <% if (message) { %><p class="c-empty-state__message"><%= message %></p><% } %>
+  <% if (cta) { %>
+    <div class="c-empty-state__cta">
+      <%- include('../button/ui', {
+        label: cta.label,
+        variant: cta.variant || 'primary',
+        icon: cta.icon || null,
+        href: cta.href || null,
+        action: cta.action || null,
+        target: cta.target || null,
+      }) %>
+    </div>
+  <% } %>
+</div>

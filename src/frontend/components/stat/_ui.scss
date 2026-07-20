@@ -1,0 +1,66 @@
+@use 'sass:meta';
+
+@mixin styles {
+  .c-stat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-4) var(--space-5);
+    background-color: var(--color-surface);
+    backdrop-filter: var(--backdrop-filter);
+    -webkit-backdrop-filter: var(--backdrop-filter);
+    border: var(--border-thin) solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--duration-normal) var(--easing-standard),
+                transform var(--duration-normal) var(--easing-standard);
+
+    &:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    &__label {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    &__value {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-primary-600);
+      line-height: var(--line-height-tight);
+
+      // Variantes semánticas por rango (métricas con umbral: RAM, CPU, jobs fallados).
+      // El color del NÚMERO cambia — no un borde/fondo — porque es la señal visual más rápida.
+      // Iter 2026-07: expuestas al ui.ejs via `valueVariant`.
+      &--success { color: var(--color-success); }
+      &--warning { color: var(--color-warning); }
+      &--danger { color: var(--color-error); }
+    }
+
+    &__delta {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+
+      &--success {
+        color: var(--color-success);
+      }
+
+      &--error {
+        color: var(--color-error);
+      }
+
+      &--neutral {
+        color: var(--color-text-muted);
+      }
+    }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

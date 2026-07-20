@@ -1,7 +1,47 @@
-<% 
-  const btnClass = locals.variant ? `btn btn--${variant}` : 'btn btn--primary';
-  const customId = locals.id ? `id="${id}"` : '';
+<%
+  // Interfaz de inclusión del button. Las páginas lo usan SOLO vía include, nunca escriben .c-button.
+  const label = locals.label || '';
+  const variant = locals.variant || 'primary'; // primary | secondary | success | danger | warning | ghost | fab
+  const size = locals.size || 'md';            // xs | sm | md | lg
+  const type = locals.type || 'button';        // button | submit
+  const href = locals.href || null;            // renders as an <a> tag instead of <button>
+  const action = locals.action || null;        // data-action → dispatcher → bus
+  const target = locals.target || null;
+  const loadingLabel = locals.loadingLabel || null;
+  const disabled = locals.disabled || false;
+  const customClass = locals.class || '';
+  const icon = locals.icon || null;            // nombre del ícono SVG (componente icon)
+  const iconAlign = locals.iconAlign || 'left'; // left | right
+  const ariaLabel = locals.ariaLabel || null;  // obligatorio si el botón es solo-ícono (label vacío)
+  const id = locals.id || null;
 %>
-<button type="<%= locals.type || 'button' %>" <%- customId %> class="<%= btnClass %> <%= locals.className || '' %>">
-  <%= locals.label || 'Click' %>
-</button>
+<% if (href) { %>
+  <a
+    <% if (id) { %>id="<%= id %>"<% } %>
+    href="<%= href %>"
+    class="c-button c-button--<%= variant %> c-button--<%= size %> <%= customClass %>"
+    <% if (action) { %>data-action="<%= action %>"<% } %>
+    <% if (target) { %>data-target="<%= target %>"<% } %>
+    <% if (ariaLabel) { %>aria-label="<%= ariaLabel %>"<% } %>
+  >
+    <% if (icon && iconAlign === 'left') { %><%- include('frontend/components/icon/ui', { name: icon }) %><% } %>
+    <span class="c-button__label"><%= label %></span>
+    <% if (icon && iconAlign === 'right') { %><%- include('frontend/components/icon/ui', { name: icon }) %><% } %>
+  </a>
+<% } else { %>
+  <button
+    <% if (id) { %>id="<%= id %>"<% } %>
+    type="<%= type %>"
+    class="c-button c-button--<%= variant %> c-button--<%= size %> <%= customClass %>"
+    data-state="idle"
+    <% if (action) { %>data-action="<%= action %>"<% } %>
+    <% if (target) { %>data-target="<%= target %>"<% } %>
+    <% if (loadingLabel) { %>data-loading-label="<%= loadingLabel %>"<% } %>
+    <% if (disabled) { %>disabled<% } %>
+    <% if (ariaLabel) { %>aria-label="<%= ariaLabel %>"<% } %>
+  >
+    <% if (icon && iconAlign === 'left') { %><%- include('frontend/components/icon/ui', { name: icon }) %><% } %>
+    <span class="c-button__label"><%= label %></span>
+    <% if (icon && iconAlign === 'right') { %><%- include('frontend/components/icon/ui', { name: icon }) %><% } %>
+  </button>
+<% } %>

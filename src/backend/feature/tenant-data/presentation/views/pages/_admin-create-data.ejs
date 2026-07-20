@@ -1,0 +1,22 @@
+<%
+  // Página delgada (views.md): alta de un record. Solo orquesta — la sección `_dynamic-form`
+  // arma los inputs a partir del schema del resource y hace el submit al api.handler.
+  const r = locals.resource;
+%>
+<div class="l-data-form u-flex u-flex-col u-gap-md">
+  <%- include('frontend/components/breadcrumbs/ui', {
+    currentPath: locals.currentPath,
+    items: [
+      { label: 'Inicio', href: '/dashboard' },
+      { label: 'Datos', href: '/dashboard/data' },
+      { label: r.name, href: `/dashboard/data/${r.name}` },
+      { label: 'Nuevo' },
+    ],
+  }) %>
+  <%- include('frontend/components/page-header/ui', {
+    title: `Nuevo registro en ${r.name}`,
+    subtitle: 'Completá los datos y guardá para agregarlo a la lista.',
+  }) %>
+
+  <%- include('backend/feature/tenant-data/presentation/views/sections/_dynamic-form', { resource: r, mode: 'create' }) %>
+</div>

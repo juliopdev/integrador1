@@ -1,0 +1,54 @@
+@use 'sass:meta';
+
+@mixin styles {
+  .c-data-table {
+    overflow-x: auto;
+    width: 100%;
+
+    &__table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: var(--font-size-sm);
+    }
+
+    &__head {
+      border-bottom: var(--border-thick) solid var(--color-border);
+    }
+
+    &__row {
+      border-bottom: var(--border-thin) solid var(--color-border);
+      transition: background-color var(--duration-fast) var(--easing-standard);
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:not(&--header):hover {
+        background-color: var(--color-surface-raised);
+      }
+    }
+
+    &__cell {
+      padding: var(--space-3) var(--space-4);
+      color: var(--color-text);
+      vertical-align: middle;
+
+      &--head {
+        color: var(--color-text-muted);
+        font-weight: var(--font-weight-bold);
+        font-size: var(--font-size-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      &--right {
+        text-align: right;
+      }
+    }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

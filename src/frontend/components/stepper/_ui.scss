@@ -1,0 +1,171 @@
+@use 'sass:meta';
+
+@mixin styles {
+  .c-stepper {
+    display: block;
+
+    &__header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: var(--space-2);
+    }
+
+    &__title {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    &__counter {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+    }
+
+    &__bar {
+      height: 6px;
+      border-radius: var(--radius-sm);
+      background: var(--color-border);
+      overflow: hidden;
+      margin-bottom: var(--space-3);
+    }
+
+    &__bar-fill {
+      height: 100%;
+      background: var(--color-primary-600);
+      width: var(--c-stepper-progress, 0%);
+      transition: width var(--duration-normal) var(--easing-standard);
+    }
+
+    &__list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      position: relative; // ancla de la línea conectora entre markers
+
+      // Iter 40 + Iter UX C1: línea vertical que conecta los markers. Ahora usa un gradient
+      // controlado por `--c-stepper-done-pct` (seteado en el <nav> por el componente): el tramo
+      // superior es azul (pasos hechos) y el inferior gris (pasos pendientes). El operador ve
+      // literalmente "hasta acá llegué" sin tener que leer los números.
+      &::before {
+        content: '';
+        position: absolute;
+        top: 1.25rem;
+        bottom: 1.25rem;
+        left: calc(var(--space-2) + 0.75rem);
+        width: 2px;
+        background: linear-gradient(
+          to bottom,
+          var(--color-primary-600) 0%,
+          var(--color-primary-600) var(--c-stepper-done-pct, 0%),
+          var(--color-border) var(--c-stepper-done-pct, 0%),
+          var(--color-border) 100%
+        );
+        z-index: 0;
+        transition: background var(--duration-normal) var(--easing-standard);
+      }
+    }
+
+    &__link {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2);
+      border-radius: var(--radius-sm);
+      color: var(--color-text-muted);
+      text-decoration: none;
+      font-size: var(--font-size-sm);
+      position: relative;
+      z-index: 1;
+      transition: background-color var(--duration-fast) var(--easing-standard);
+
+      &:hover {
+        background-color: var(--color-surface-raised);
+        color: var(--color-text);
+      }
+
+      // Indicador estático (sin href): sin affordance de click.
+      &--static {
+        cursor: default;
+        &:hover { background-color: transparent; color: inherit; }
+      }
+    }
+
+    // Marker CSS puro (círculo por estado) con fondo opaco: tapa la línea conectora y da un
+    // anclaje de tamaño consistente. El estado lo pinta el modificador del item (abajo).
+    &__icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.5rem;
+      flex-shrink: 0;
+      background: var(--color-surface);
+      border: var(--border-thick) solid var(--color-border-strong);
+      border-radius: var(--radius-full);
+    }
+
+    &__body {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    &__index {
+      font-size: var(--font-size-xs);
+      opacity: 0.7;
+    }
+
+    &__label {
+      font-weight: var(--font-weight-normal);
+    }
+
+    // Estados
+    &__item--done &__link { color: var(--color-text); }
+
+    // done: círculo lleno del primario con un check dibujado en CSS (contraste por on-color).
+    &__item--done &__icon {
+      background: var(--color-primary-600);
+      border-color: var(--color-primary-600);
+
+      &::after {
+        content: '';
+        width: 0.55em;
+        height: 0.3em;
+        border-left: var(--border-thick) solid var(--color-on-primary);
+        border-bottom: var(--border-thick) solid var(--color-on-primary);
+        transform: rotate(-45deg) translateY(-15%);
+      }
+    }
+
+    // current: anillo del primario con punto interior.
+    &__item--current &__icon {
+      border-color: var(--color-primary-600);
+
+      &::after {
+        content: '';
+        width: 0.5em;
+        height: 0.5em;
+        border-radius: var(--radius-full);
+        background: var(--color-primary-600);
+      }
+    }
+
+    &__item--current &__link {
+      background: color-mix(in srgb, var(--color-primary-600) 12%, transparent);
+      color: var(--color-primary-700);
+      &:hover { background: color-mix(in srgb, var(--color-primary-600) 18%, transparent); }
+    }
+    &__item--current &__label { font-weight: var(--font-weight-bold); }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

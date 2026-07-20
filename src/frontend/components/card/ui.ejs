@@ -1,0 +1,62 @@
+<%
+  // card: contenedor con cabecera opcional.
+  const title = locals.title || null;
+  const titleHtml = locals.titleHtml || null;
+  const subtitle = locals.subtitle || null;
+  const subtitleHtml = locals.subtitleHtml || null;
+  const headerActions = locals.headerActions || null;
+  const icon = locals.icon || null;
+  const iconBg = locals.iconBg || null;
+  const mediaHtml = locals.mediaHtml || null;
+  const mediaImage = locals.mediaImage || null;
+  const mediaIcon = locals.mediaIcon || null;
+  const mediaBg = locals.mediaBg || '';
+  const body = locals.body || '';   // HTML de confianza (lo compone la sección/página)
+  const footer = locals.footer || null;
+  const padding = locals.padding || 'md'; // none | md | lg
+  const hasDivider = locals.hasDivider || false;
+  const interactive = locals.interactive || false;
+  const customClass = locals.class || '';
+  
+  const hasHeader = title || titleHtml || subtitle || subtitleHtml || headerActions || icon;
+%>
+<section class="c-card c-card--p-<%= padding %> <%= hasDivider ? 'c-card--has-divider' : '' %> <%= interactive ? 'c-card--interactive' : '' %> <%= customClass %>">
+  <% if (mediaHtml || mediaImage || mediaIcon) { %>
+    <div class="c-card__media <%= mediaBg %>">
+      <% if (mediaHtml) { %>
+        <%- mediaHtml %>
+      <% } else if (mediaImage) { %>
+        <img src="<%= mediaImage %>" alt="<%= title || '' %>" class="c-card__media-image" />
+      <% } else if (mediaIcon) { %>
+        <div class="c-card__media-icon-wrapper">
+          <%- include('frontend/components/icon/ui', { name: mediaIcon, size: 'lg' }) %>
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+
+  <% if (hasHeader) { %>
+    <header class="c-card__header">
+      <div class="c-card__header-content">
+        <% if (icon) { %>
+          <div class="c-card__icon-wrapper <%= iconBg || '' %>">
+            <%- include('frontend/components/icon/ui', { name: icon }) %>
+          </div>
+        <% } %>
+        <div class="c-card__heading">
+          <% if (titleHtml) { %><h3 class="c-card__title"><%- titleHtml %></h3>
+          <% } else if (title) { %><h3 class="c-card__title"><%= title %></h3><% } %>
+          <% if (subtitleHtml) { %><p class="c-card__subtitle"><%- subtitleHtml %></p>
+          <% } else if (subtitle) { %><p class="c-card__subtitle"><%= subtitle %></p><% } %>
+        </div>
+      </div>
+      <% if (headerActions) { %><div class="c-card__header-actions"><%- headerActions %></div><% } %>
+    </header>
+  <% } %>
+
+  <div class="c-card__body"><%- body %></div>
+
+  <% if (footer) { %>
+    <footer class="c-card__footer"><%- footer %></footer>
+  <% } %>
+</section>

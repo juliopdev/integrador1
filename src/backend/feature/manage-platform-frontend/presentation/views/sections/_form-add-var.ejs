@@ -1,0 +1,26 @@
+<%- include('frontend/components/modal/ui', {
+  id: 'modal-add-env-var',
+  title: 'Agregar Variable de Entorno',
+  body: `
+    <div class="c-form" style="display: flex; flex-direction: column; gap: var(--space-4);">
+      <div class="c-input">
+        <label class="c-input__label" for="field-new-env-key">Clave / Nombre</label>
+        <div class="c-input__wrapper">
+          <input type="text" class="c-input__field" id="field-new-env-key" placeholder="EJ: API_URL" style="font-family: monospace;">
+        </div>
+      </div>
+      <div class="c-input">
+        <label class="c-input__label" for="field-new-env-val">Valor</label>
+        <div class="c-input__wrapper">
+          <input type="text" class="c-input__field" id="field-new-env-val" placeholder="EJ: https://api.evently.com" style="font-family: monospace;">
+        </div>
+      </div>
+    </div>
+  `,
+  footer: `
+    <div class="u-flex u-justify-end u-gap-xs" style="width: 100%;">
+      <button type="button" class="c-button c-button--ghost" data-action="modal:close" data-target="modal-add-env-var">Cancelar</button>
+      <button type="button" class="c-button c-button--primary" id="btn-save-new-env">Guardar</button>
+    </div>
+  `
+}) %>

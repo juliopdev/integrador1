@@ -1,0 +1,43 @@
+<%
+  const c = locals.counts || { tenants: { active: 0, suspended: 0, softDeleted: 0 }, frontends: { hosted: 0, external: 0 } };
+  const h = locals.health || {};
+  const st = h.storage || { platformDb: {}, tenantDbs: {}, backups: {} };
+
+  const fmtBytes = (b) => {
+    if (!b) return '0 B';
+    const u = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let i = 0; let n = Number(b);
+    while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+    return `${n.toFixed(i > 0 ? 1 : 0)} ${u[i]}`;
+  };
+
+  let bodyContent = `
+    <div class="l-home-widget__stats-3">
+      ${include('frontend/components/stat/ui', {
+        label: 'Activos',
+        value: c.tenants.active,
+      })}
+      ${include('frontend/components/stat/ui', {
+        label: 'Suspendidos',
+        value: c.tenants.suspended,
+        valueVariant: c.tenants.suspended > 0 ? 'warning' : null,
+      })}
+      ${include('frontend/components/stat/ui', {
+        label: 'Soft-del.',
+        value: c.tenants.softDeleted,
+      })}
+    </div>
+    <div class="l-home-widget__tech-details">
+      <div class="l-tech-detail"><strong>Platform DB:</strong> <span>${fmtBytes(st.platformDb?.bytes)}</span></div>
+      <div class="l-tech-detail"><strong>Tenant DBs:</strong> <span>${fmtBytes(st.tenantDbs?.bytes)} (${st.tenantDbs?.count || 0} archivos)</span></div>
+      <div class="l-tech-detail"><strong>Backups:</strong> <span>${fmtBytes(st.backups?.bytes)}</span></div>
+    </div>
+  `;
+%>
+<%- include('frontend/components/card/ui', {
+  title: 'Tenants',
+  headerActions: `<a class="l-home-widget__link" href="/dashboard/tenants">${include('frontend/components/icon/ui', { name: 'layers', size: 'sm' })} Gestionar →</a>`,
+  body: bodyContent,
+  footer: `${c.frontends.hosted + c.frontends.external} frontends · ${c.superadmins} Superadmin${c.superadmins === 1 ? '' : 's'}`,
+  padding: 'md'
+}) %>

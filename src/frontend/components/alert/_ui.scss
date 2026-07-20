@@ -1,0 +1,28 @@
+@use 'sass:meta';
+
+@mixin styles {
+  .c-alert {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-thin) solid transparent;
+    border-left-width: var(--space-1);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    background-color: var(--color-surface-raised);
+
+    &__title { font-weight: var(--font-weight-bold); }
+    &__message { font-size: var(--font-size-sm); }
+
+    // El acento (borde izquierdo) marca la severidad sin pisar la legibilidad del texto.
+    &--success { border-left-color: var(--color-success); }
+    &--warning { border-left-color: var(--color-warning); }
+    &--error { border-left-color: var(--color-error); }
+    &--info { border-left-color: var(--color-info); }
+  }
+}
+
+@function ui() {
+  @return meta.get-mixin('styles');
+}

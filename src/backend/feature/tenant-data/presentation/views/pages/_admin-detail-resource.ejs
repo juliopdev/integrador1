@@ -1,0 +1,29 @@
+<%
+  const r = locals.resource;
+  const cap = r.name.charAt(0).toUpperCase() + r.name.slice(1);
+%>
+<div class="u-flex u-flex-col u-gap-md" id="detail-page-container">
+  <%- include('frontend/components/breadcrumbs/ui', {
+    currentPath: locals.currentPath,
+    items: [
+      { label: 'Inicio', href: '/dashboard' },
+      { label: 'Datos', href: '/dashboard/data' },
+      { label: cap },
+    ],
+  }) %>
+
+  <%- include('frontend/components/page-header/ui', {
+    title: cap,
+    subtitle: 'Ver, crear, editar y eliminar los registros de esta sección.',
+    actions: include('../sections/_header-actions-detail', { resource: r })
+  }) %>
+
+  <%- include('backend/feature/tenant-data/presentation/views/sections/_resource-records', {
+    resource: r,
+    records: locals.records || [],
+    pagination: locals.pagination,
+    storeError: locals.storeError,
+  }) %>
+</div>
+
+<%- include('../sections/_csv-import-wizard', { resource: r }) %>

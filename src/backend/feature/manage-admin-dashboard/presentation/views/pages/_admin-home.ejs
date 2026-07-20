@@ -1,61 +1,111 @@
-<div class="dashboard-panel">
-  <!-- Información del Administrador Conectado BEM -->
-  <div class="profile-card">
-    <div class="profile-card__avatar">👤</div>
-    <div class="profile-card__info">
-      <h3 class="profile-card__name">
-        <%= adminUser.email %>
-        <% if (adminUser.role === 'superadmin') { %>
-          <span class="profile-card__badge profile-card__badge--superadmin">Superadmin</span>
-        <% } else { %>
-          <span class="profile-card__badge profile-card__badge--master"><%= adminUser.role %></span>
-        <% } %>
-      </h3>
-      <p class="profile-card__tenant">
-        <% if (tenant) { %>
-          Inquilino activo: <strong><%= tenant.name %></strong> (ID: <%= tenant.id %>)
-        <% } else { %>
-          Consola global del sistema SaaS
-        <% } %>
-      </p>
+<%
+  // Home rediseñado. Iter 53: Superadmin con widgets. Iter 54 + 54b: Master/Staff **agnóstico
+  // del dominio** — nada asume ecommerce/videos/bolsa laboral. Los tiles del launcher son fijos
+  // (Master) o filtrados por permisos (Staff); los datos concretos salen de tablas de sistema
+  // comunes a todo tenant. Ver `.plans/ITER-54B-HOME-REFINEMENT.md`.
+  //
+  // Iter 2026-07: se migró el hero al `_dashboard-page-frame` con `variant: 'hero'` (extraía las
+  // 3 duplicaciones de scaffold breadcrumb+hero+CTA por rol). Se eliminó `escHtml` local — se
+  // usa el global inyectado por defaultContext (views.md §8).
+  const user = locals.user || {};
+  const category = locals.category || 'staff';
+  const isPlatform = user.scope === 'platform';
+  const isMaster = category === 'master';
+
+  const firstName = ((user.email || '').split('@')[0] || '').split(/[._]/)[0];
+  const greeting = firstName ? `Buen día, ${escHtml(firstName)}` : 'Buen día';
+  const projectName = locals.brandTitle || 'tu plataforma';
+
+  // El frame acepta `titleHtml` para permitir emoji / etiquetas — los nombres van escapados con
+  // `escHtml()` global antes de concatenarse (el resto del string es de confianza: literal en la
+  // vista o env del proyecto).
+  const heroFrame = ({ titleHtml, subtitle, action }) => include('backend/common/views/sections/_dashboard-page-frame', {
+    breadcrumb: [{ label: 'Inicio' }],
+    titleHtml,
+    subtitle,
+    variant: 'hero',
+    action,
+    currentPath: locals.currentPath,
+  });
+%>
+<% if (isPlatform) { %>
+  <div class="l-home">
+    <%- heroFrame({
+      titleHtml: 'Consola del Superadmin',
+      subtitle: 'Control global de la infraestructura, base de datos core y ciclo de vida de tenants.',
+      action: { label: 'Crear tenant', href: '/dashboard/tenants', icon: 'plus' },
+    }) %>
+
+    <div class="l-home__grid">
+      <%- include('backend/feature/manage-admin-dashboard/presentation/views/sections/_widget-vps-health', locals) %>
+      <%- include('backend/feature/manage-admin-dashboard/presentation/views/sections/_widget-recent-errors', locals) %>
+      <%- include('backend/feature/manage-admin-dashboard/presentation/views/sections/_widget-tenants', locals) %>
+      <%- include('backend/feature/manage-admin-dashboard/presentation/views/sections/_widget-activity', locals) %>
     </div>
   </div>
+<% } else if (isMaster) { %>
+  <div class="l-home">
+    <%- heroFrame({
+      titleHtml: `${greeting} 👋`,
+      subtitle: 'Bienvenido al panel de control de tu plataforma. Todo está funcionando normalmente hoy.',
+      action: { label: 'Ver mis registros', href: '/dashboard/data', icon: 'database' },
+    }) %>
 
-  <!-- Módulos Exclusivos del Superadmin -->
-  <% if (adminUser.role === 'superadmin') { %>
-    <h2 class="dashboard-panel__title">Consola del Superadministrador</h2>
-    <p class="dashboard-panel__subtitle">Acciones de control global, aprovisionamiento de bases de datos y maquetación sin código.</p>
-
-    <div class="dashboard-grid">
-      <a href="/dashboard/backends" class="action-card">
-        <div class="action-card__icon">🛠️</div>
-        <h3 class="action-card__title">Motor No-Code (Blueprints)</h3>
-        <p class="action-card__desc">Diseña, crea y edita esquemas lógicos y APIs para tus inquilinos.</p>
-        <div class="action-card__footer">Entrar al Motor &rarr;</div>
-      </a>
-
-      <a href="/dashboard/tenants" class="action-card">
-        <div class="action-card__icon">🏢</div>
-        <h3 class="action-card__title">Gestión de Inquilinos</h3>
-        <p class="action-card__desc">Administra, crea y suspende inquilinos asignando Blueprints.</p>
-        <div class="action-card__footer">Ver Inquilinos &rarr;</div>
-      </a>
-
-      <!-- Importar sección de logs y salud del sistema -->
-      <%- include('../sections/_tab-system-health') %>
-      <%- include('../sections/_tab-admin-logs') %>
+    <div class="l-home__grid">
+      <%- include('backend/feature/manage-admin-dashboard/presentation/views/sections/_widget-web-health', locals) %>
+      <%- include('backend/feature/manage-admin-dashboard/presentation/views/sections/_widget-community-summary', locals) %>
+      <%- include('backend/feature/manage-admin-dashboard/presentation/views/sections/_widget-team-attendance', locals) %>
+      <%- include('backend/feature/manage-admin-dashboard/presentation/views/sections/_widget-quick-actions', locals) %>
     </div>
-  <% } %>
+  </div>
+<% } else { %>
+  <%
+    // Staff home: hero mínimo + SOLO quick-actions filtradas por permisos reales del rol.
+    // Ver `parse-role-permissions.js` para el shape de flags.
+    const perms = (locals.permissions) || { hasAnyDataAccess: false, hasReadAccess: false, isSupport: false };
+    const showData = perms.hasAnyDataAccess;
+    const showMetrics = perms.hasReadAccess;
+    const showSupport = perms.isSupport;
+    const anyTile = showData || showMetrics || showSupport;
+  %>
+  <div class="l-home">
+    <%- heroFrame({
+      titleHtml: greeting,
+      subtitle: `Bienvenido a ${escHtml(projectName)}. Elegí a dónde ir.`,
+    }) %>
 
-  <!-- Módulos Exclusivos del Master/Staff de Inquilino -->
-  <% if (adminUser.role === 'master' || adminUser.role === 'staff') { %>
-    <h2 class="dashboard-panel__title">Consola de Inquilino</h2>
-    <p class="dashboard-panel__subtitle">Administra tus bases de datos aisladas, canales de comunicación y miembros de soporte.</p>
-
-    <div class="dashboard-grid">
-      <!-- Importar secciones de métricas y acciones de staff -->
-      <%- include('../sections/_tab-master-metrics') %>
-      <%- include('../sections/_staff-quick-actions') %>
-    </div>
-  <% } %>
-</div>
+    <% if (anyTile) { %>
+      <article class="l-home-widget l-home-widget--span-2">
+        <header class="l-home-widget__header">
+          <h3 class="l-home-widget__title">¿Qué querés hacer hoy?</h3>
+        </header>
+        <div class="l-home-widget__body l-quick-actions">
+          <% if (showData) { %>
+            <a class="l-quick-action" href="/dashboard/data">
+              <span class="l-quick-action__label">Administrar datos</span>
+              <span class="l-quick-action__hint">Ver, agregar o editar los registros de tu plataforma</span>
+            </a>
+          <% } %>
+          <% if (showMetrics) { %>
+            <a class="l-quick-action" href="/dashboard/metrics">
+              <span class="l-quick-action__label">Ver métricas</span>
+              <span class="l-quick-action__hint">Auditá los datos y la actividad de tu web</span>
+            </a>
+          <% } %>
+          <% if (showSupport) { %>
+            <a class="l-quick-action" href="/dashboard/chat">
+              <span class="l-quick-action__label">Soporte</span>
+              <span class="l-quick-action__hint">Contactá al equipo de soporte de la plataforma</span>
+            </a>
+          <% } %>
+        </div>
+      </article>
+    <% } else { %>
+      <article class="l-home-widget l-home-widget--span-2">
+        <div class="l-home-widget__body">
+          <p class="l-home-widget__empty">Todavía no tenés permisos asignados. Contactá al Master de este tenant para que te habilite algunos accesos.</p>
+        </div>
+      </article>
+    <% } %>
+  </div>
+<% } %>
